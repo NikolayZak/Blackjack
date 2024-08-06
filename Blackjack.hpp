@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <random>
 #include <string>
+#include <unordered_map>
 
 using namespace std;
 
@@ -43,6 +44,10 @@ const string Card_Value_Str[] = {
     "Jack",
     "Queen",
     "King"
+};
+
+const int Card_Value_Int[] = {
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10
 };
 
 enum Card_Suit{
@@ -112,6 +117,7 @@ struct Hand{
     vector<Card> cards;
     int total;
     bool Ace;
+    bool natural_blackjack;
 };
 
 class Player{
@@ -124,14 +130,15 @@ class Player{
    public:
     Player(int money);
     ~Player();
-    bool Hit(Card_Shoe &shoe, int hand_num); // returns false on bust
-    bool Deal_In(Card_Shoe &shoe, int money); // returns true on blackjack & pays out 2.5x
+    void Hit(Card_Shoe &shoe, int hand_num); // returns false on bust
+    void Deal_In(Card_Shoe &shoe, int money); // pays out 2.5x on natural blackjack
     void Split(Card_Shoe &shoe, int hand_num);
     void Double(Card_Shoe &shoe, int hand_num);
     void Win();
     int Hand_Total(int hand_num);
-    const vector<Card>& Cards(int hand_num);
+    const Hand& Cards(int hand_num);
     int Hands_In_Play();
+    int Balance();
 };
 
 Player::Player(int money){
@@ -144,53 +151,46 @@ Player::~Player(){
     }
 }
 
-bool Player::Hit(Card_Shoe &shoe, int hand_num){
+void Player::Hit(Card_Shoe &shoe, int hand_num){
     Card draw = shoe.Deal();
     if(draw.value == Ace){
         hands[hand_num].Ace = true;
     }
-    if(draw.value > 9){
-        hands[hand_num].total += 10;
-    }else{
-        hands[hand_num].total += draw.value + 1;
-    }
+    hands[hand_num].total += Card_Value_Int[draw.value];
     hands[hand_num].cards.push_back(draw);
-    if(hands[hand_num].total > 21){
-        return false;
-    }
-    return true;
 }
 
-bool Player::Deal_In(Card_Shoe &shoe, int money){
+void Player::Deal_In(Card_Shoe &shoe, int money){
     valid_hands = 1;
     hands[0].Ace = false;
     hands[0].total = 0;
     hands[0].cards.clear();
     wager = money;
     credit -= money;
-    (void)Hit(shoe, 0);
-    (void)Hit(shoe, 0);
+    Hit(shoe, 0);
+    Hit(shoe, 0);
     if(hands[0].Ace && hands[0].total == 11){
         credit += wager*2.5;
-        wager = 0;
-        return true;
+        hands[0].natural_blackjack = true;
+        return;
     }
-    return false;
+    hands[0].natural_blackjack = false;
 }
 
 void Player::Split(Card_Shoe &shoe, int hand_num){
-    
     Card descendant = hands[hand_num].cards.back();
     hands[hand_num].cards.pop_back();
     hands[hand_num + 1].cards.push_back(descendant);
-    (void)Hit(shoe, hand_num);
-    (void)Hit(shoe, hand_num + 1);
+    Hit(shoe, hand_num);
+    Hit(shoe, hand_num + 1);
+    hands[hand_num].natural_blackjack = false;
+    hands[hand_num + 1].natural_blackjack = false;
     wager += wager/valid_hands;
     valid_hands++;
 }
 
 void Player::Double(Card_Shoe &shoe, int hand_num){
-    (void)Hit(shoe, hand_num);
+    Hit(shoe, hand_num);
     wager += wager/valid_hands;
 }
 
@@ -202,19 +202,21 @@ int Player::Hand_Total(int hand_num){
     return hands[hand_num].total;
 }
 
-const vector<Card>& Player::Cards(int hand_num){
-    return hands[hand_num].cards;
+const Hand& Player::Cards(int hand_num){
+    return hands[hand_num];
 }
 
 int Player::Hands_In_Play(){
     return valid_hands;
 }
 
+int Player::Balance(){
+    return credit;
+}
+
 class Dealer{
    private:
-    vector<Card> hand;
-    int total;
-    bool Ace;
+    Hand hand;
 
     void Hit(Card_Shoe &shoe);
 
@@ -222,7 +224,7 @@ class Dealer{
     void Deal_In(Card_Shoe &shoe);
     int Call(Card_Shoe &shoe); // returns the dealer's total hand
     Card Face_Card();
-    const vector<Card>& Cards();
+    const Hand& Cards();
     Dealer();
     ~Dealer();
 };
@@ -232,47 +234,149 @@ Dealer::Dealer(){
 }
 
 Dealer::~Dealer(){
-    hand.clear();
+    hand.cards.clear();
 }
 
 void Dealer::Hit(Card_Shoe &shoe){
     Card draw = shoe.Deal();
     if(draw.value == Ace){
-        Ace = true;
+        hand.Ace = true;
     }
     if(draw.value > 9){
-        total += 10;
+        hand.total += 10;
     }else{
-        total += draw.value + 1;
+        hand.total += draw.value + 1;
     }
-    hand.push_back(draw);
+    hand.cards.push_back(draw);
     return;
 }
 
 void Dealer::Deal_In(Card_Shoe &shoe){
-    hand.clear();
-    total = 0;
-    Ace = false;
+    hand.cards.clear();
+    hand.total = 0;
+    hand.Ace = false;
     Hit(shoe);
     Hit(shoe);
 }
 
 int Dealer::Call(Card_Shoe &shoe){
-    while(total < 17){
-        if(Ace && total > 6 && total < 12){
-            return total + 10;
+    while(hand.total < 17){
+        if(hand.Ace && hand.total > 6 && hand.total < 12){
+            return hand.total + 10;
         }
         Hit(shoe);
     }
-    return total;
+    return hand.total;
 }
 
 Card Dealer::Face_Card(){
-    return hand.front();
+    return hand.cards.front();
 }
 
-const vector<Card>& Dealer::Cards(){
+const Hand& Dealer::Cards(){
     return hand;
+}
+
+class Absent_Map{
+   private:
+    int drawn_cards[13];
+    int cards;
+    int decks;
+    int duplicates;
+
+   public:
+    void Add(Card_Value drawn);
+    void Clear();
+    double Probability(Card_Value Theta);
+    Absent_Map(int number_of_decks);
+    ~Absent_Map();
+};
+
+Absent_Map::Absent_Map(int number_of_decks){
+    decks = number_of_decks;
+    cards = number_of_decks * 52;
+    duplicates = number_of_decks * 4;
+    for(int i = 0; i < 13; i++){
+        drawn_cards[i] = duplicates;
+    }
+}
+
+Absent_Map::~Absent_Map(){
+    //nothing
+}
+
+void Absent_Map::Add(Card_Value drawn){
+    drawn_cards[drawn]++;
+    cards--;
+}
+
+void Absent_Map::Clear(){
+    cards = decks * 52;
+    for(int i = 0; i < 13; i++){
+        drawn_cards[i] = duplicates;
+    }
+}
+
+double Absent_Map::Probability(Card_Value Theta){
+    return drawn_cards[Theta]/cards;
+}
+
+struct Player_Result{
+    int wins;
+    int loses;
+};
+
+struct Simulation_Results{
+    int House_Balance;
+    int wins;
+    int loses;
+    int splits;
+    int doubles;
+};
+
+class Blackjack{
+   private:
+    vector<Player> players;
+    Dealer Tom;
+    Card_Shoe Shoe;
+    Absent_Map Remaining_Cards;
+    vector<Player_Result> Game_Result;
+    int House_Earnings;
+
+    double Bust_Chance(Hand my_hand);
+
+   public:
+    Simulation_Results Play(int games, int players, int money);
+};
+
+double Blackjack::Bust_Chance(Hand my_hand){
+    if(my_hand.total > 13){// check for odds of not busting and invert it
+        double safe_chance = 0;
+        Card_Value test_card = Ace;
+        while(Card_Value_Int[test_card] + my_hand.total < 22){
+            safe_chance += Remaining_Cards.Probability(test_card);
+            test_card = (Card_Value)((int)test_card + 1);
+        }
+        return 1 - safe_chance;
+    }else{// check for odds of busting
+        double bust_chance = 0;
+        Card_Value test_card = King;
+        while(Card_Value_Int[test_card] + my_hand.total > 21){
+            bust_chance += Remaining_Cards.Probability(test_card);
+            test_card = (Card_Value)((int)test_card - 1);
+        }
+        return bust_chance;
+    }
+}
+
+Simulation_Results Blackjack::Play(int games, int players, int money){
+    Simulation_Results ans;
+    ans.House_Balance = 0;
+    ans.wins = 0;
+    ans.loses = 0;
+    ans.splits = 0;
+    ans.doubles = 0;
+
 }
 
 #endif

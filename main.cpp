@@ -1,9 +1,11 @@
 #include "Blackjack.hpp"
 
+#define NUMBER_OF_DECKS 8
+
+
 void Print_Card(const Card &current){
     cout << Card_Value_Str[current.value] << " of " << Card_Suit_Str[current.suit] << " ";
 }
-
 
 void Print_Hand(const vector<Card>& hand){
     cout << "Player Hand: ";
@@ -14,13 +16,14 @@ void Print_Hand(const vector<Card>& hand){
 }
 
 int main(){
-    Card_Shoe Shoe(8);
-    Player P1(1000);
-    Dealer D1;
-    D1.Deal_In(Shoe);
-    P1.Deal_In(Shoe, 100);
-    Print_Hand(P1.Cards(P1.Hands_In_Play() - 1));
-    cout << D1.Call(Shoe) << endl;
-
+    Absent_Map Card(NUMBER_OF_DECKS);
+    Card_Shoe Shoe(NUMBER_OF_DECKS);
+    Player Stephen(1000);
+    Dealer Tom;
+    Tom.Deal_In(Shoe);
+    Stephen.Deal_In(Shoe, 100);
+    Print_Hand(Stephen.Cards(0).cards);
+    cout << Tom.Call(Shoe) << endl;
+    
     return 0;
 }
