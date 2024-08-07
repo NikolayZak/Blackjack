@@ -3,7 +3,7 @@
 // blackjack setup
 // Nikolay Zakirov, 2024-08-05
 
-#define MAX_SPLIT 4
+#define MAX_SPLIT 2
 #define MINIMUM_WINNING_ODDS 0.55
 
 #include <iostream>
@@ -116,7 +116,7 @@ Card Card_Shoe::Deal(){
 }
 
 bool Card_Shoe::Half(){
-    if(shoe_index + 1 > deck.size() / 2){
+    if(shoe_index + 1 > (int)deck.size() / 2){
         return true;
     }
     return false;
@@ -170,6 +170,7 @@ class Player{
     const Hand& Cards(int hand_num);
     int Hands_In_Play();
     int Balance();
+    int Call(Card_Shoe &shoe, Absent_Map &remaining_cards, Hand &my_hand, Card dealer_card);
 };
 
 Player::Player(int money){
@@ -242,6 +243,11 @@ int Player::Balance(){
     return credit;
 }
 
+int Player::Call(Card_Shoe &shoe, Absent_Map &remaining_cards, Hand &my_hand, Card dealer_card);{
+
+}
+
+
 class Dealer{
    private:
     Hand hand;
@@ -251,7 +257,7 @@ class Dealer{
    public:
     void Deal_In(Card_Shoe &shoe);
     int Call(Card_Shoe &shoe);
-    Card Face_Card();
+    Card Dealer_Card();
     const Hand& Cards();
     void Clear();
     int Total();
@@ -297,7 +303,7 @@ int Dealer::Call(Card_Shoe &shoe){
     return hand.total;
 }
 
-Card Dealer::Face_Card(){
+Card Dealer::Dealer_Card(){
     return hand.cards.front();
 }
 
@@ -373,6 +379,7 @@ class Blackjack{
     double Risk_Of_Ruin(double winRate, double lossRate, double averageWin, double averageLoss, double maxRiskPercent, double tradingCapital);
     double Win_Chance();
     double Natural_Blackjack_Chance();
+    void Check_Split(Card_Shoe shoe, Absent_Map remains, Hand my_hand, int num_hands);
     void Play_Round(Simulation_Results &ans);
 
    public:
@@ -412,22 +419,52 @@ double Blackjack::Natural_Blackjack_Chance(){
 
 }
 
+// splits if needed and splits as many times as possible
+void Blackjack::Check_Split(Card_Shoe shoe, Absent_Map remaining_cards, Hand my_hand, int hands){
+
+}
+
 void Blackjack::Play_Round(Simulation_Results &ans){
+    // reshuffle if needed
     if(Shoe.Half()){
         Shoe.Reshuffle();
         Remaining_Cards.Clear();
     }
 
-    double P_win = Win_Chance();
-    double P_loss = 100 - P_win;
-    double P_BJ = Natural_Blackjack_Chance();
-    double average_win = //(P_win - P_BJ) + (P_BJ * 1.5); // fix this
-    double RoR = Risk_Of_Ruin(P_win, P_loss, average_win);
-    int calculated_wager;
-    if(P_win >= MINIMUM_WINNING_ODDS){
-        while()
-    }else{
-        calculated_wager = 0;
+    // check odds, bet accordingly, deal in each player and the dealer
+    for(int i = 0; i < (int)players.size(); i++){
+        double P_win = Win_Chance();
+        double best_wager;
+        if(P_win >= MINIMUM_WINNING_ODDS){
+            double P_loss = 100 - P_win;
+            double P_BJ = Natural_Blackjack_Chance();
+            double player_balance = (double)players[i].Balance();
+            best_wager = 2; // start at 2 so the minimum bet is 1 dollar
+
+            double average_win = (P_BJ/P_win) * 2.5 * best_wager + (1 - (P_BJ/P_win)) * 2 * best_wager;
+            double average_loss = best_wager;
+            double RoR = Risk_Of_Ruin(P_win, P_loss, average_win, average_loss, 1, player_balance);
+
+            while(RoR < 0.02){
+                best_wager++;
+                average_win = (P_BJ/P_win) * 2.5 * best_wager + (1 - (P_BJ/P_win)) * 2 * best_wager;
+                average_loss = best_wager;
+                RoR = Risk_Of_Ruin(P_win, P_loss, average_win, average_loss, 1, player_balance);
+            }
+            best_wager--;
+        }else{
+            best_wager = 0;
+        }
+        players[i].Deal_In(Shoe, best_wager);
+    }
+    Tom.Deal_In(Shoe);
+
+    // each player's turn
+    for(int i = 0; i < (int)players.size(); i++){
+        Check_Split(Shoe, Remaining_Cards, players[i].Cards(0), 0);
+        for(int j = 0; j < players[i].Hands_In_Play(); j++){ // for every hand
+            players[i].Call(Shoe, Remaining_Cards, players[i].Cards(j), Tom.Dealer_Card());
+        }
     }
 }
 
