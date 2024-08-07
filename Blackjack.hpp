@@ -122,6 +122,50 @@ bool Card_Shoe::Half(){
     return false;
 }
 
+class Absent_Map{
+   private:
+    int drawn_cards[13];
+    int cards;
+    int decks;
+    int duplicates;
+
+   public:
+    void Add(Card_Value drawn);
+    void Clear();
+    double Probability(Card_Value Theta);
+    Absent_Map(int number_of_decks);
+    ~Absent_Map();
+};
+
+Absent_Map::Absent_Map(int number_of_decks){
+    decks = number_of_decks;
+    cards = number_of_decks * 52;
+    duplicates = number_of_decks * 4;
+    for(int i = 0; i < 13; i++){
+        drawn_cards[i] = duplicates;
+    }
+}
+
+Absent_Map::~Absent_Map(){
+    //nothing
+}
+
+void Absent_Map::Add(Card_Value drawn){
+    drawn_cards[drawn]++;
+    cards--;
+}
+
+void Absent_Map::Clear(){
+    cards = decks * 52;
+    for(int i = 0; i < 13; i++){
+        drawn_cards[i] = duplicates;
+    }
+}
+
+double Absent_Map::Probability(Card_Value Theta){
+    return drawn_cards[Theta]/cards;
+}
+
 class Hand{
     public:
     vector<Card> cards;
@@ -170,7 +214,7 @@ class Player{
     const Hand& Cards(int hand_num);
     int Hands_In_Play();
     int Balance();
-    int Call(Card_Shoe &shoe, Absent_Map &remaining_cards, Hand &my_hand, Card dealer_card);
+    int Call(Card_Shoe &shoe, Absent_Map &remaining_cards,const Hand &my_hand, Card dealer_card);
 };
 
 Player::Player(int money){
@@ -243,7 +287,7 @@ int Player::Balance(){
     return credit;
 }
 
-int Player::Call(Card_Shoe &shoe, Absent_Map &remaining_cards, Hand &my_hand, Card dealer_card);{
+int Player::Call(Card_Shoe &shoe, Absent_Map &remaining_cards, const Hand &my_hand, Card dealer_card){
 
 }
 
@@ -313,50 +357,6 @@ const Hand& Dealer::Cards(){
 
 void Dealer::Clear(){
     hand.Clear();
-}
-
-class Absent_Map{
-   private:
-    int drawn_cards[13];
-    int cards;
-    int decks;
-    int duplicates;
-
-   public:
-    void Add(Card_Value drawn);
-    void Clear();
-    double Probability(Card_Value Theta);
-    Absent_Map(int number_of_decks);
-    ~Absent_Map();
-};
-
-Absent_Map::Absent_Map(int number_of_decks){
-    decks = number_of_decks;
-    cards = number_of_decks * 52;
-    duplicates = number_of_decks * 4;
-    for(int i = 0; i < 13; i++){
-        drawn_cards[i] = duplicates;
-    }
-}
-
-Absent_Map::~Absent_Map(){
-    //nothing
-}
-
-void Absent_Map::Add(Card_Value drawn){
-    drawn_cards[drawn]++;
-    cards--;
-}
-
-void Absent_Map::Clear(){
-    cards = decks * 52;
-    for(int i = 0; i < 13; i++){
-        drawn_cards[i] = duplicates;
-    }
-}
-
-double Absent_Map::Probability(Card_Value Theta){
-    return drawn_cards[Theta]/cards;
 }
 
 struct Simulation_Results{
