@@ -4,6 +4,7 @@
 // Nikolay Zakirov, 2024-08-05
 
 #define MAX_SPLIT 2
+#define DOUBLE_ON_SPLIT false
 #define MINIMUM_WINNING_ODDS 0.55
 
 #include <iostream>
@@ -214,7 +215,6 @@ class Player{
     const Hand& Cards(int hand_num);
     int Hands_In_Play();
     int Balance();
-    int Call(Card_Shoe &shoe, Absent_Map &remaining_cards,const Hand &my_hand, Card dealer_card);
 };
 
 Player::Player(int money){
@@ -285,10 +285,6 @@ int Player::Hands_In_Play(){
 
 int Player::Balance(){
     return credit;
-}
-
-int Player::Call(Card_Shoe &shoe, Absent_Map &remaining_cards, const Hand &my_hand, Card dealer_card){
-
 }
 
 
@@ -379,8 +375,11 @@ class Blackjack{
     double Risk_Of_Ruin(double winRate, double lossRate, double averageWin, double averageLoss, double maxRiskPercent, double tradingCapital);
     double Win_Chance();
     double Natural_Blackjack_Chance();
-    void Check_Split(Card_Shoe shoe, Absent_Map remains, Hand my_hand, int num_hands);
-    void Play_Round(Simulation_Results &ans);
+    void Check_Split(int player_num);
+    bool Check_Double(int player_num, int hand_num);
+    void Player_Call(int player_num, int hand_num);
+    void Payout_Winners(Simulation_Results &tally);
+    void Play_Round(Simulation_Results &tally);
 
    public:
     Simulation_Results Play(int num_games, int num_players, int money_per_player);
@@ -411,6 +410,7 @@ double Blackjack::Risk_Of_Ruin(double winRate, double lossRate, double averageWi
     return riskOfRuin;
 }
 
+// premeditated Win_Chance
 double Blackjack::Win_Chance(){
 
 }
@@ -420,11 +420,24 @@ double Blackjack::Natural_Blackjack_Chance(){
 }
 
 // splits if needed and splits as many times as possible
-void Blackjack::Check_Split(Card_Shoe shoe, Absent_Map remaining_cards, Hand my_hand, int hands){
+void Blackjack::Check_Split(int player_num){
 
 }
 
-void Blackjack::Play_Round(Simulation_Results &ans){
+// Doubles as much as possible
+bool Blackjack::Check_Double(int player_num, int hand_num){
+
+}
+
+void Blackjack::Player_Call(int player_num, int hand_num){
+
+}
+
+void Blackjack::Payout_Winners(Simulation_Results &tally){
+
+}
+
+void Blackjack::Play_Round(Simulation_Results &tally){
     // reshuffle if needed
     if(Shoe.Half()){
         Shoe.Reshuffle();
@@ -436,7 +449,7 @@ void Blackjack::Play_Round(Simulation_Results &ans){
         double P_win = Win_Chance();
         double best_wager;
         if(P_win >= MINIMUM_WINNING_ODDS){
-            double P_loss = 100 - P_win;
+            double P_loss = 1 - P_win; 
             double P_BJ = Natural_Blackjack_Chance();
             double player_balance = (double)players[i].Balance();
             best_wager = 2; // start at 2 so the minimum bet is 1 dollar
@@ -460,12 +473,24 @@ void Blackjack::Play_Round(Simulation_Results &ans){
     Tom.Deal_In(Shoe);
 
     // each player's turn
+    bool hand_split;
     for(int i = 0; i < (int)players.size(); i++){
-        Check_Split(Shoe, Remaining_Cards, players[i].Cards(0), 0);
+        // check splits
+        Check_Split(i);
+        tally.player_splits += players[i].Hands_In_Play() - 1;
         for(int j = 0; j < players[i].Hands_In_Play(); j++){ // for every hand
-            players[i].Call(Shoe, Remaining_Cards, players[i].Cards(j), Tom.Dealer_Card());
+            // check doubles, call if no doubles
+            if(Check_Double(i, j)){
+                tally.player_doubles++;
+            }else{
+                Player_Call(i, j);
+            }
         }
     }
+
+    // dealer calls
+    Tom.Call(Shoe);
+    Payout_Winners(tally);
 }
 
 Simulation_Results Blackjack::Play(int num_games, int num_players, int money_per_player){
