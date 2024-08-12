@@ -5,33 +5,40 @@
 #include "Card_Shoe.hpp"
 
 
-class Hand{
+class Hand {
     public:
-    vector<Card> cards;
-    int total;
-    bool Ace;
-    bool natural_blackjack;
-    void Clear();
-    Hand();
-    ~Hand();
+    vector<int> cards;
+    int Ace_Count;
+
+    int Total() const {
+        int total = 0;
+        for (int card : cards) {
+            total += card;
+        }
+        return total;
+    }
+
+    bool IsSoft() const {
+        return Ace_Count > 0 && Total() + 10 <= 21;
+    }
+
+    bool CanSplit() const {
+        return cards.size() == 2 && cards[0] == cards[1];
+    }
+
+    void Clear(){
+        cards.clear();
+        Ace_Count = 0;
+    }
+
+    Hand(){
+        Ace_Count = 0;
+    }
+
+    ~Hand(){
+        cards.clear();
+    }
 };
-
-Hand::Hand(){
-    total = 0;
-    Ace = false;
-    natural_blackjack = false;
-}
-
-Hand::~Hand(){
-    cards.clear();
-}
-
-void Hand::Clear(){
-    total = 0;
-    Ace = false;
-    natural_blackjack = false;
-    cards.clear();
-}
 
 class Player{
    private:

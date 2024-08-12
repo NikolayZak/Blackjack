@@ -1,18 +1,20 @@
 #ifndef CARD_SHOE
 #define CARD_SHOE
 
-#include "General.hpp"
+
 #include "Absent_Map.hpp"
+
+using namespace std;
 
 class Card_Shoe{
    private:
-    vector<Card> deck;
+    vector<int> deck;
     int shoe_index;
 
    public:
     void Reshuffle();
     void Permutate();
-    Card Deal();
+    int Deal();
     bool Half();
     void New_Shoe(const Absent_Map &map);
     Card_Shoe(const int number_of_decks);
@@ -21,14 +23,14 @@ class Card_Shoe{
 
 Card_Shoe::Card_Shoe(const int number_of_decks){
     shoe_index = 0;
-    Card tmp;
     for(int i = 0; i < number_of_decks; i++){ // for every deck
-        for(int j = 0; j < 13; j++){    // for every value
-            tmp.value = (Card_Value)j;
+        for(int j = 1; j < 10; j++){    // for every number (except 10s)
             for(int k = 0; k < 4; k++){ // for every suit
-                tmp.suit = (Card_Suit)k;
-                deck.push_back(tmp);
+                deck.push_back(j);
             }
+        }
+        for(int j = 0; j < 16; j++){ // sixteen 10's for every deck
+            deck.push_back(10);
         }
     }
     Reshuffle();
@@ -51,8 +53,8 @@ void Card_Shoe::Permutate(){
     shuffle(deck.begin() + shoe_index, deck.end(), g);
 }
 
-Card Card_Shoe::Deal(){
-    Card ans = deck[shoe_index];
+int Card_Shoe::Deal(){
+    int ans = deck[shoe_index];
     shoe_index++;
     return ans;
 }
@@ -69,12 +71,12 @@ void Card_Shoe::New_Shoe(const Absent_Map &used){
     int num_missing;
     int counter;
     shoe_index = 0;
-    Card tmp;
-    for(int i = 0; i < 13; i++){
-        num_missing = duplicates - used.Count((Card_Value)i);
+    int tmp;
+    for(int i = 1; i < 11; i++){
+        num_missing = duplicates - used.Count(i);
         for(int j = 0; j < num_missing; j++){
             counter = shoe_index;
-            while(deck[counter].value != Card_Value(i)){
+            while(deck[counter] != i){
                 counter++;
             }
             // swap to front
