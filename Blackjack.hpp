@@ -2,170 +2,8 @@
 #define BLACKJACK
 // blackjack setup
 // Nikolay Zakirov, 2024-08-05
+#include "Card_Shoe.hpp"
 
-#define MAX_SPLIT 2
-#define DOUBLE_ON_SPLIT false
-#define MINIMUM_WINNING_ODDS 0.55
-
-#include <iostream>
-#include <vector>
-#include <algorithm>
-#include <random>
-#include <string>
-#include <cmath>
-
-using namespace std;
-
-enum Card_Value{
-    Ace,
-    Two,
-    Three,
-    Four,
-    Five,
-    Six,
-    Seven,
-    Eight,
-    Nine,
-    Ten,
-    Jack,
-    Queen,
-    King
-};
-
-const string Card_Value_Str[] = {
-    "Ace",
-    "Two",
-    "Three",
-    "Four",
-    "Five",
-    "Six",
-    "Seven",
-    "Eight",
-    "Nine",
-    "Ten",
-    "Jack",
-    "Queen",
-    "King"
-};
-
-const int Card_Value_Int[] = {
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 10
-};
-
-enum Card_Suit{
-    Diamonds,
-    Clubs,
-    Hearts,
-    Spades
-};
-
-const string Card_Suit_Str[] = {
-    "Diamonds",
-    "Clubs",
-    "Hearts",
-    "Spades"
-};
-
-struct Card{
-    Card_Value value;
-    Card_Suit suit;
-};
-
-class Card_Shoe{
-   private:
-    vector<Card> deck;
-    int shoe_index;
-
-   public:
-    void Reshuffle();
-    Card Deal();
-    bool Half();
-    Card_Shoe(const int number_of_decks);
-    ~Card_Shoe();
-};
-
-Card_Shoe::Card_Shoe(const int number_of_decks){
-    shoe_index = 0;
-    Card tmp;
-    for(int i = 0; i < number_of_decks; i++){ // for every deck
-        for(int j = 0; j < 13; j++){    // for every value
-            tmp.value = (Card_Value)j;
-            for(int k = 0; k < 4; k++){ // for every suit
-                tmp.suit = (Card_Suit)k;
-                deck.push_back(tmp);
-            }
-        }
-    }
-    Reshuffle();
-}
-
-Card_Shoe::~Card_Shoe(){
-    deck.clear();
-}
-
-void Card_Shoe::Reshuffle(){
-    shoe_index = 0;
-    std::random_device rd;
-    std::mt19937 g(rd());
-    shuffle(deck.begin(), deck.end(), g);
-}
-
-Card Card_Shoe::Deal(){
-    Card ans = deck[shoe_index];
-    shoe_index++;
-    return ans;
-}
-
-bool Card_Shoe::Half(){
-    if(shoe_index + 1 > (int)deck.size() / 2){
-        return true;
-    }
-    return false;
-}
-
-class Absent_Map{
-   private:
-    int drawn_cards[13];
-    int cards;
-    int decks;
-    int duplicates;
-
-   public:
-    void Add(Card_Value drawn);
-    void Clear();
-    double Probability(Card_Value Theta);
-    Absent_Map(int number_of_decks);
-    ~Absent_Map();
-};
-
-Absent_Map::Absent_Map(int number_of_decks){
-    decks = number_of_decks;
-    cards = number_of_decks * 52;
-    duplicates = number_of_decks * 4;
-    for(int i = 0; i < 13; i++){
-        drawn_cards[i] = duplicates;
-    }
-}
-
-Absent_Map::~Absent_Map(){
-    //nothing
-}
-
-void Absent_Map::Add(Card_Value drawn){
-    drawn_cards[drawn]++;
-    cards--;
-}
-
-void Absent_Map::Clear(){
-    cards = decks * 52;
-    for(int i = 0; i < 13; i++){
-        drawn_cards[i] = duplicates;
-    }
-}
-
-double Absent_Map::Probability(Card_Value Theta){
-    return drawn_cards[Theta]/cards;
-}
 
 class Hand{
     public:
@@ -197,8 +35,8 @@ void Hand::Clear(){
 
 class Player{
    private:
-    Hand hands[MAX_SPLIT];
-    int valid_hands;
+    Hand hands[2];
+    bool split;
     int credit;
     int wager;
     int lowest_balance;
@@ -206,11 +44,12 @@ class Player{
    public:
     Player(int money);
     ~Player();
-    void Hit(Card_Shoe &shoe, int hand_num); // returns false on bust
-    void Deal_In(Card_Shoe &shoe, int money); // pays out 2.5x on natural blackjack
-    void Split(Card_Shoe &shoe, int hand_num);
-    void Double(Card_Shoe &shoe, int hand_num);
+    void Hit(Card_Shoe &shoe, int hand_num);
+    void Deal_In(Card_Shoe &shoe, int money);
+    void Split(Card_Shoe &shoe);
+    void Double(Card_Shoe &shoe);
     void Win();
+    void Lose();
     int Hand_Total(int hand_num);
     const Hand& Cards(int hand_num);
     int Hands_In_Play();
@@ -222,7 +61,7 @@ Player::Player(int money){
 }
 
 Player::~Player(){
-    for(int i = 0; i < MAX_SPLIT; i++){
+    for(int i = 0; i < 2; i++){
         hands[i].Clear();
     }
 }
@@ -237,41 +76,57 @@ void Player::Hit(Card_Shoe &shoe, int hand_num){
 }
 
 void Player::Deal_In(Card_Shoe &shoe, int money){
-    valid_hands = 1;
+    split = false;
     hands[0].Clear();
+    hands[1].Clear();
     wager = money;
-    credit -= money;
     Hit(shoe, 0);
     Hit(shoe, 0);
     if(hands[0].Ace && hands[0].total == 11){
-        credit += wager*2.5;
         hands[0].natural_blackjack = true;
         return;
     }
 }
 
-void Player::Split(Card_Shoe &shoe, int hand_num){
-    Card descendant = hands[hand_num].cards.back();
-    hands[hand_num].cards.pop_back();
-    hands[hand_num + 1].cards.push_back(descendant);
-    Hit(shoe, hand_num);
-    Hit(shoe, hand_num + 1);
-    hands[hand_num].natural_blackjack = false;
-    hands[hand_num + 1].natural_blackjack = false;
-    wager += wager/valid_hands;
-    valid_hands++;
+void Player::Split(Card_Shoe &shoe){
+    Card descendant = hands[0].cards.back();
+    hands[0].cards.pop_back();
+    hands[1].cards.push_back(descendant);
+    Hit(shoe, 0);
+    Hit(shoe, 1);
+    hands[0].natural_blackjack = false;
+    hands[1].natural_blackjack = false;
+    wager *= 2;
+    split = true;
 }
 
-void Player::Double(Card_Shoe &shoe, int hand_num){
-    Hit(shoe, hand_num);
-    wager += wager/valid_hands;
+void Player::Double(Card_Shoe &shoe){
+    Hit(shoe, 0);
+    wager *= 2;
 }
 
 void Player::Win(){
-    credit += wager*2;
+    if(split){
+        credit += wager / 2;
+        return;
+    }
+    if(hands[0].natural_blackjack){
+        credit += wager * 1.5;
+    }
+    credit += wager;
+}
+
+void Player::Lose(){
+    if(split){
+        credit -= wager / 2;
+    }
+    credit -= wager;
 }
 
 int Player::Hand_Total(int hand_num){
+    if(hands[hand_num].Ace && hands[hand_num].total < 12){
+        return hands[hand_num].total + 10;
+    }
     return hands[hand_num].total;
 }
 
@@ -279,14 +134,9 @@ const Hand& Player::Cards(int hand_num){
     return hands[hand_num];
 }
 
-int Player::Hands_In_Play(){
-    return valid_hands;
-}
-
 int Player::Balance(){
     return credit;
 }
-
 
 class Dealer{
    private:
@@ -296,7 +146,7 @@ class Dealer{
 
    public:
     void Deal_In(Card_Shoe &shoe);
-    int Call(Card_Shoe &shoe);
+    void Call(Card_Shoe &shoe);
     Card Dealer_Card();
     const Hand& Cards();
     void Clear();
@@ -318,11 +168,6 @@ void Dealer::Hit(Card_Shoe &shoe){
     if(draw.value == Ace){
         hand.Ace = true;
     }
-    if(draw.value > 9){
-        hand.total += 10;
-    }else{
-        hand.total += draw.value + 1;
-    }
     hand.cards.push_back(draw);
     return;
 }
@@ -333,12 +178,18 @@ void Dealer::Deal_In(Card_Shoe &shoe){
     Hit(shoe);
 }
 
-int Dealer::Call(Card_Shoe &shoe){
+void Dealer::Call(Card_Shoe &shoe){
     while(hand.total < 17){
         if(hand.Ace && hand.total > 6 && hand.total < 12){
-            return hand.total + 10;
+            return; // exeption (Ace makes it > 16)
         }
         Hit(shoe);
+    }
+}
+
+int Dealer::Total(){
+    if(hand.Ace && hand.total < 12){
+        return hand.total + 10;
     }
     return hand.total;
 }
@@ -347,20 +198,19 @@ Card Dealer::Dealer_Card(){
     return hand.cards.front();
 }
 
-const Hand& Dealer::Cards(){
-    return hand;
-}
-
 void Dealer::Clear(){
     hand.Clear();
 }
 
 struct Simulation_Results{
-    int House_Balance;
+    int rounds_played;
+    int house_balance;
+    int player_pushes;
     int player_wins;
     int player_loses;
     int player_splits;
     int player_doubles;
+    int shoe_shuffles;
 };
 
 class Blackjack{
@@ -368,12 +218,13 @@ class Blackjack{
     vector<Player> players;
     Dealer Tom;
     Card_Shoe Shoe;
-    Absent_Map Remaining_Cards;
-    int House_Earnings;
+    Absent_Map Used_Cards;
+
 
     double Bust_Chance(Hand my_hand);
-    double Risk_Of_Ruin(double winRate, double lossRate, double averageWin, double averageLoss, double maxRiskPercent, double tradingCapital);
-    double Win_Chance();
+    double Win_Chance(Hand my_hand);
+    double Risk_Of_Ruin(double winRate, double lossRate, double averageWin, double averageLoss, double maxRiskPercent, double tradingCapital); // good
+    double PreWin_Chance(); // Monte carlo Sim 10,000
     double Natural_Blackjack_Chance();
     void Check_Split(int player_num);
     bool Check_Double(int player_num, int hand_num);
@@ -390,7 +241,7 @@ double Blackjack::Bust_Chance(Hand my_hand){
         double safe_chance = 0;
         Card_Value test_card = Ace;
         while(Card_Value_Int[test_card] + my_hand.total < 22){
-            safe_chance += Remaining_Cards.Probability(test_card);
+            safe_chance += Used_Cards.Probability(test_card);
             test_card = (Card_Value)((int)test_card + 1);
         }
         return 1 - safe_chance;
@@ -398,11 +249,22 @@ double Blackjack::Bust_Chance(Hand my_hand){
         double bust_chance = 0;
         Card_Value test_card = King;
         while(Card_Value_Int[test_card] + my_hand.total > 21){
-            bust_chance += Remaining_Cards.Probability(test_card);
+            bust_chance += Used_Cards.Probability(test_card);
             test_card = (Card_Value)((int)test_card - 1);
         }
         return bust_chance;
     }
+}
+
+double Blackjack::Win_Chance(Hand my_hand){
+    // compute the chance the dealer beats my_hand
+    Card Dcard = Tom.Dealer_Card();
+    bool DAce = false;
+    if(Dcard.value == Ace){
+        DAce = true;
+    }
+    int hand_total = Card_Value_Int[Dcard.value];
+    
 }
 
 double Blackjack::Risk_Of_Ruin(double winRate, double lossRate, double averageWin, double averageLoss, double maxRiskPercent, double tradingCapital) {
@@ -410,18 +272,18 @@ double Blackjack::Risk_Of_Ruin(double winRate, double lossRate, double averageWi
     return riskOfRuin;
 }
 
-// premeditated Win_Chance
-double Blackjack::Win_Chance(){
+// monte carlo sim
+double Blackjack::PreWin_Chance(){
 
 }
 
 double Blackjack::Natural_Blackjack_Chance(){
-
+    return Used_Cards.TenProbability() * Used_Cards.Probability(Ace);
 }
 
-// splits if needed and splits as many times as possible
 void Blackjack::Check_Split(int player_num){
-
+    Hand my_hand = players[player_num].Cards(0);
+    Bust_Chance(my_hand);
 }
 
 // Doubles as much as possible
@@ -441,14 +303,15 @@ void Blackjack::Play_Round(Simulation_Results &tally){
     // reshuffle if needed
     if(Shoe.Half()){
         Shoe.Reshuffle();
-        Remaining_Cards.Clear();
+        Used_Cards.Clear();
+        tally.shoe_shuffles++;
     }
 
     // check odds, bet accordingly, deal in each player and the dealer
     for(int i = 0; i < (int)players.size(); i++){
-        double P_win = Win_Chance();
+        double P_win = PreWin_Chance();
         double best_wager;
-        if(P_win >= MINIMUM_WINNING_ODDS){
+        if(P_win >= 0.5){
             double P_loss = 1 - P_win; 
             double P_BJ = Natural_Blackjack_Chance();
             double player_balance = (double)players[i].Balance();
@@ -496,15 +359,18 @@ void Blackjack::Play_Round(Simulation_Results &tally){
 Simulation_Results Blackjack::Play(int num_games, int num_players, int money_per_player){
     //setup
     Simulation_Results ans;
-    ans.House_Balance = 0;
+    ans.rounds_played = 0;
+    ans.house_balance = 0;
+    ans.player_pushes = 0;
     ans.player_wins = 0;
     ans.player_loses = 0;
     ans.player_splits = 0;
     ans.player_doubles = 0;
+    ans.shoe_shuffles = 0;
     players.clear();
     Tom.Clear();
     Shoe.Reshuffle();
-    Remaining_Cards.Clear();
+    Used_Cards.Clear();
 
     for(int i = 0; i < num_players; i++){
         Player new_player(money_per_player);
