@@ -41,7 +41,7 @@ Absent_Map::~Absent_Map(){
 }
 
 void Absent_Map::Add(int drawn){
-    remaining_cards[drawn]--;
+    remaining_cards[drawn - 1]--;
     cards--;
 }
 

@@ -16,14 +16,6 @@ struct Hand {
         }
     }
 
-    int Total() const {
-        int total = 0;
-        for (int card : cards) {
-            total += card;
-        }
-        return total;
-    }
-
     int Low_Total() const {
         int total = 0;
         for (int card : cards) {
@@ -226,21 +218,15 @@ struct Simulation_Results{
 };
 
 struct EV_Results{
-    double wins;
-    double losses;
-    double pushes;
+    double win_P;
+    double loss_P;
+    double push_P;
+    double prob_hand;
     EV_Results(){
-        wins = 0;
-        losses = 0;
-        pushes = 0;
-    }
-    void Scale_Difference(const EV_Results &Original, const double &multiplier){
-        double win_diff = wins - Original.wins;
-        double loss_diff = losses - Original.losses;
-        double push_diff = pushes - Original.pushes;
-        wins = Original.wins + win_diff * multiplier;
-        losses = Original.losses + loss_diff * multiplier;
-        pushes = Original.pushes + push_diff * multiplier;
+        win_P = 0;
+        loss_P = 0;
+        push_P = 0;
+        prob_hand = 1;
     }
 };
 
@@ -253,12 +239,15 @@ class Blackjack{
 
     double Bust_Chance(Hand my_hand);
     double Risk_Of_Ruin(double winRate, double lossRate, double averageWin, double averageLoss, double maxRiskPercent, double tradingCapital); // good
-    void Stand_Rec(Absent_Map a_map, const int &my_total, Hand dealer_hand, EV_Results &tally);
+    void Stand_Rec(Absent_Map a_map, int my_total, Hand dealer_hand, EV_Results &tally);
+    void Split_Rec(Absent_Map a_map, Hand my_hand, int dealer_card, double Multiplier, double &Expected_Value);
 
    public:
     Blackjack(int num_decks, int num_players, int credit_per_player);
     ~Blackjack();
-    double Stand_EV(const Absent_Map &a_map, const Hand &my_hand, const int &dealer_card);
+    double Stand_EV(Absent_Map a_map, Hand my_hand, int dealer_card);
+    double Hit_EV(Absent_Map a_map, Hand my_hand, int dealer_card);
+    double Split_EV(Absent_Map a_map, Hand my_hand, int dealer_card);
     Move Best_Move(const Absent_Map &a_map, const Hand &my_hand, const int &dealer_card);
     //Simulation_Results Play(int num_games, int num_players, int money_per_player);
 };
@@ -300,71 +289,129 @@ double Blackjack::Risk_Of_Ruin(double winRate, double lossRate, double averageWi
 
 // ***********************************************************************   BEST MOVE   **************************************************************************
 
-void Blackjack::Stand_Rec(Absent_Map a_map, const int &my_total, Hand dealer_hand, EV_Results &tally){
+void Blackjack::Stand_Rec(Absent_Map a_map, int my_total, Hand dealer_hand, EV_Results &tally){
     // base case: Dealer has 17 or more
     int dealer_total = dealer_hand.High_Total();
     if(dealer_total > 16){                                // Dealer has a hand
         if(dealer_total > 21 || dealer_total < my_total){ // Dealer Lose: Bust || Dealer Short
-            tally.wins++;
+            tally.win_P += tally.prob_hand;
         }else if(dealer_total > my_total){                // Dealer Win
-            tally.losses++;
+            tally.loss_P += tally.prob_hand;
         }else{                                            // Push
-            tally.pushes++;
+            tally.push_P += tally.prob_hand;
         }
         return;
     } // implied else (Dealer needs to pickup)
 
-    EV_Results snapshot;
     int card_dups;
+    double original_prob = tally.prob_hand;
     for(int i = 1; i < 11; i++){ // go through the map
         card_dups = a_map.Count(i);
         if(card_dups == 0){
             continue; // no copies
         }
-        // save tally
-        snapshot = tally;
+        
         // iterate 1 hand
+        tally.prob_hand *= a_map.Probability(i);
         dealer_hand.Add(i);
         a_map.Add(i);
         Stand_Rec(a_map, my_total, dealer_hand, tally);
         dealer_hand.Remove_Last();
         a_map.Remove(i);
-        // scale results and add
-        tally.Scale_Difference(snapshot, a_map.Probability(i));
+        tally.prob_hand = original_prob;
     }
 }
 
-double Blackjack::Stand_EV(const Absent_Map &a_map, const Hand &my_hand, const int &dealer_card){
+double Blackjack::Stand_EV(Absent_Map a_map, Hand my_hand, int dealer_card){
     EV_Results ans;
     Hand dealer_hand;
     dealer_hand.Add(dealer_card);
     int my_total = my_hand.High_Total();
     Stand_Rec(a_map, my_total, dealer_hand, ans);
-    //double WR = ans.wins / (ans.losses + ans.wins + ans.pushes);
-    //double EV = WR * 2;  //(payout)
-    cout << "Wins: " << ans.wins << endl << "Losses: " << ans.losses << endl << "Pushes: " << ans.pushes << endl;
-    return ((double)ans.wins / (double)(ans.losses + ans.wins + ans.pushes)) * 2; // EV
+    double WR = ans.win_P / (ans.loss_P + ans.win_P + ans.push_P);
+    double EV = (WR * 2) - 1;  //(payout)
+    return EV;
 }
 
-double Hit_EV(const Card_Shoe &Shoe, Hand my_hand, int dealer_card){
-    return 0;
+double Blackjack::Hit_EV(Absent_Map a_map, Hand my_hand, int dealer_card){
+    EV_Results ans;
+    Hand dealer_hand;
+    dealer_hand.Add(dealer_card);
+    int card_dups;
+    int my_total = my_hand.High_Total();
+
+    for(int i = 1; i < 11; i++){ // iterate each possible hit
+        card_dups = a_map.Count(i);
+        if(card_dups == 0){
+            continue; // no copies
+        }
+        ans.prob_hand *= a_map.Probability(i);
+        my_hand.Add(i);
+        a_map.Add(i);
+        my_total = my_hand.High_Total();
+        if(my_total > 21){ // check for bust
+            ans.loss_P += ans.prob_hand;
+        }else{
+            Stand_Rec(a_map, my_total, dealer_hand, ans);
+        }
+        my_hand.Remove_Last();
+        a_map.Remove(i);
+        ans.prob_hand = 1; // reset the probability
+    }
+    double WR = ans.win_P / (ans.loss_P + ans.win_P + ans.push_P);
+    double EV = (WR * 2) - 1;  //(payout)
+    return EV;
 }
 
-double Double_EV(const Card_Shoe &Shoe, Hand my_hand, int dealer_card){
-    return 0;
+void Blackjack::Split_Rec(Absent_Map a_map, Hand my_hand, int dealer_card, double Multiplier, double &Expected_Value){
+    double Hit_EV_ = Hit_EV(a_map, my_hand, dealer_card);
+    double Stand_EV_ = Stand_EV(a_map, my_hand, dealer_card);
+
+    // base case: Hit_EV < Stand_EV
+    if(Hit_EV_ < Stand_EV_){
+        Expected_Value += Stand_EV_ * Multiplier;
+        return;
+    }
+
+    // case recursion
+    int card_dups;
+    int my_total;
+    double old_multy = Multiplier;
+    for(int i = 1; i < 11; i++){
+        card_dups = a_map.Count(i);
+        if(card_dups == 0){
+            continue; // no copies
+        }
+        Multiplier *= a_map.Probability(i);
+        my_hand.Add(i);
+        a_map.Add(i);
+        my_total = my_hand.High_Total();
+        if(my_total < 22){ // check it's not busted
+            Split_Rec(a_map, my_hand, dealer_card, Multiplier, Expected_Value);
+        }
+        my_hand.Remove_Last();
+        a_map.Remove(i);
+        Multiplier = old_multy;
+    }
 }
 
-double Split_EV(const Card_Shoe &Shoe, Hand my_hand, int dealer_card){
-     return 0;
+double Blackjack::Split_EV(Absent_Map a_map, Hand my_hand, int dealer_card){
+    double ans;
+    my_hand.Remove_Last();
+    int card_dups;
+    int my_total = my_hand.High_Total();
+    double multiplier = 1;
+    Split_Rec(a_map, my_hand, dealer_card, multiplier, ans);
+    return ans * 2;
 }
 
 Move Blackjack::Best_Move(const Absent_Map &a_map, const Hand &my_hand, const int &dealer_card){
     Move ans;
     ans.stand_EV = Stand_EV(a_map, my_hand, dealer_card);
-    ans.hit_EV = Hit_EV(Shoe, my_hand, dealer_card);
-    ans.double_EV = Double_EV(Shoe, my_hand, dealer_card);
+    ans.hit_EV = Hit_EV(a_map, my_hand, dealer_card);
+    ans.double_EV = ans.hit_EV * 2;
     if(my_hand.Can_Split()){
-        ans.split_EV = Split_EV(Shoe, my_hand, dealer_card);
+        ans.split_EV = Split_EV(a_map, my_hand, dealer_card);
     }else{
         ans.split_EV = -10;
     }
