@@ -7,23 +7,21 @@
 
 
 
+
+
 int main(){
-    
-}
-
-
-
-
-/*
-int main(){
-    Blackjack BJ(NUMBER_OF_DECKS, NUMBER_OF_PLAYERS, CREDIT_PER_PLAYER);
+    Blackjack BJ;
     Absent_Map test_map(NUMBER_OF_DECKS);
     Hand test_hand;
-    test_hand.Add(10);
-    test_hand.Add(10);
+    test_hand.Add(2);
+    test_hand.Add(2);
 
-    test_map.Add(10);
-    test_map.Add(10);
+    test_map.Add(2);
+    test_map.Add(2);
+    test_map.Add(2);
+    test_map.Add(2);
+    test_map.Add(3);
+    test_map.Add(3);
     test_map.Add(6);
 
     Move choice = BJ.Best_Move(test_map, test_hand, 6);
@@ -33,6 +31,6 @@ int main(){
     if(choice.split_EV != -10){
         cout << "Split EV: " << choice.split_EV << endl;
     }
+    cout << "Best Move: " << choice.best << endl;
     return 0;
 }
-*/
