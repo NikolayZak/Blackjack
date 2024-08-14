@@ -1,29 +1,28 @@
 #include "Blackjack.hpp"
 
-#define NUMBER_OF_DECKS 8
+#define NUMBER_OF_DECKS 1
+#define NUMBER_OF_PLAYERS 5
+#define CREDIT_PER_PLAYER 0
 
 
-void Print_Card(const Card &current){
-    cout << Card_Value_Str[current.value] << " of " << Card_Suit_Str[current.suit] << " ";
-}
-
-void Print_Hand(const vector<Card>& hand){
-    cout << "Player Hand: ";
-    for(int i = 0; i < (int)hand.size(); i++){
-        Print_Card(hand[i]);
-    }
-    cout << endl;
-}
 
 int main(){
-    Absent_Map Card(NUMBER_OF_DECKS);
-    Card_Shoe Shoe(NUMBER_OF_DECKS);
-    Player Stephen(1000);
-    Dealer Tom;
-    Tom.Deal_In(Shoe);
-    Stephen.Deal_In(Shoe, 100);
-    Print_Hand(Stephen.Cards(0).cards);
-    cout << Tom.Call(Shoe) << endl;
-    
+    Blackjack BJ(NUMBER_OF_DECKS, NUMBER_OF_PLAYERS, CREDIT_PER_PLAYER);
+    Absent_Map test_map(NUMBER_OF_DECKS);
+    Hand test_hand;
+    test_hand.Add(10);
+    test_hand.Add(10);
+
+    test_map.Add(10);
+    test_map.Add(10);
+    test_map.Add(6);
+
+    Move choice = BJ.Best_Move(test_map, test_hand, 6);
+    cout << "Stand EV: " << choice.stand_EV << endl;
+    cout << "Hit EV: " << choice.hit_EV << endl;
+    cout << "Double EV: " << choice.double_EV << endl;
+    if(choice.split_EV != -10){
+        cout << "Split EV: " << choice.split_EV << endl;
+    }
     return 0;
 }
