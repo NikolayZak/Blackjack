@@ -6,6 +6,15 @@
 
 
 
+
+int main(){
+    
+}
+
+
+
+
+/*
 int main(){
     Blackjack BJ(NUMBER_OF_DECKS, NUMBER_OF_PLAYERS, CREDIT_PER_PLAYER);
     Absent_Map test_map(NUMBER_OF_DECKS);
@@ -26,3 +35,4 @@ int main(){
     }
     return 0;
 }
+*/

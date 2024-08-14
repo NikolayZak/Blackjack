@@ -242,14 +242,18 @@ class Blackjack{
     void Stand_Rec(Absent_Map a_map, int my_total, Hand dealer_hand, EV_Results &tally);
     void Split_Rec(Absent_Map a_map, Hand my_hand, int dealer_card, double Multiplier, double &Expected_Value);
 
-   public:
-    Blackjack(int num_decks, int num_players, int credit_per_player);
-    ~Blackjack();
     double Stand_EV(Absent_Map a_map, Hand my_hand, int dealer_card);
     double Hit_EV(Absent_Map a_map, Hand my_hand, int dealer_card);
     double Split_EV(Absent_Map a_map, Hand my_hand, int dealer_card);
+    double Blackjack_Chance();
+    double Win_Chance();
+
+   public:
+    Blackjack(int num_decks, int num_players, int credit_per_player);
+    ~Blackjack();
     Move Best_Move(const Absent_Map &a_map, const Hand &my_hand, const int &dealer_card);
-    //Simulation_Results Play(int num_games, int num_players, int money_per_player);
+    double Win_Chance();
+    Simulation_Results Play(int num_games, int num_players, int money_per_player);
 };
 
 Blackjack::Blackjack(int num_decks, int num_players, int credit_per_player) : Shoe(num_decks), Used_Cards(num_decks){
@@ -417,6 +421,7 @@ Move Blackjack::Best_Move(const Absent_Map &a_map, const Hand &my_hand, const in
     }
     return ans;
 }
+
 
 // ****************************************************************************************************************************************************************
 
