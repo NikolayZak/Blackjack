@@ -9,14 +9,15 @@
 #include <cmath>
 
 class Absent_Map{
-   private:
+    private:
     int remaining_cards[10];
     int cards;
     int decks;
     int duplicates;
 
-   public:
+    public:
     void Add(int drawn);
+    void Remove(int Theta);
     void Clear();
     double Probability(int Theta);
     int Count(int Theta) const;
@@ -44,6 +45,11 @@ void Absent_Map::Add(int drawn){
     cards--;
 }
 
+void Absent_Map::Remove(int Theta){
+    remaining_cards[Theta - 1]++;
+    cards++;
+}
+
 void Absent_Map::Clear(){
     cards = decks * 52;
     for(int i = 0; i < 9; i++){
@@ -53,7 +59,7 @@ void Absent_Map::Clear(){
 }
 
 double Absent_Map::Probability(int Theta){
-    return remaining_cards[Theta - 1]/cards;
+    return (double)remaining_cards[Theta - 1]/(double)cards;
 }
 
 int Absent_Map::Count(int Theta) const {
