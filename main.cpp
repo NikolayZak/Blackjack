@@ -31,6 +31,12 @@ int main(){
       cout << "Number of Rounds: " << sides.second * sides.first << endl;
       cout << "Rate of Return With " << 100 * CONFIDENCE_LEVEL << "% " << "Confidence: " << confidence_interval.first << " to " << confidence_interval.second << endl;
       cout << "Average Return: " << average_return << " With Varience of: " << variance << endl;
+
+      cout << "Enter 's' to end the program\n";
+      char test = 'a';
+      while(test != 's'){
+            cin >> test;
+      }
       return 0;
 }
  
