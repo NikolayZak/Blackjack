@@ -274,6 +274,7 @@ class Blackjack{
     ~Blackjack();
     Move Best_Move(const Absent_Map &a_map, const Hand &my_hand, const int &dealer_card);
     Simulation_Results Simulate(int num_decks, Absent_Map Card_Count, int n, int Bet_Amount);
+    double Pre_Win_Chance(int num_decks, Absent_Map Card_Count);
 };
 
 Blackjack::Blackjack(){
@@ -562,6 +563,14 @@ Simulation_Results Blackjack::Simulate(int num_decks, Absent_Map Card_Count, int
     chrono::duration<double> duration = end - start;
     ans.time = duration.count();
     return ans;
+}
+
+
+double Blackjack::Pre_Win_Chance(int num_decks, Absent_Map Card_Count){
+    Simulation_Results ans = Simulate(num_decks, Card_Count, 1000, 1);
+    double total_games = ans.player_blackjack + ans.player_wins + ans.player_losses; // pushes don't count LOL
+    double Win_Chance = (((double)ans.player_wins / total_games) * 2 + ((double)ans.player_blackjack / total_games) * 2.5);
+    return Win_Chance;
 }
 
 // ****************************************************************************************************************************************************************
