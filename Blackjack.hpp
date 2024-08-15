@@ -216,6 +216,8 @@ struct Simulation_Results{
     int player_splits;
     int player_doubles;
     int player_blackjack;
+    double time;
+    int bet_size;
     Simulation_Results(){
         rounds_played = 0;
         player_balance = 0;
@@ -225,6 +227,20 @@ struct Simulation_Results{
         player_doubles = 0;
         player_splits = 0;
         player_blackjack = 0;
+        time = 0;
+        bet_size = 0;
+    }
+    void Print(){
+        cout << "Time Elapsed: " << time << " seconds" << endl;
+        cout << "Bet Size: " << bet_size << endl;
+        cout << "Rounds Played: " << rounds_played << endl;
+        cout << "Player Balance: " << player_balance << endl;
+        cout << "Player Wins: " << player_wins << endl;
+        cout << "Player Losses: " << player_losses << endl;
+        cout << "Player Pushes: " << player_pushes << endl;
+        cout << "Player Blackjacks: " << player_blackjack << endl;
+        cout << "Player Doubles: " << player_doubles << endl;
+        cout << "Player Splits: " << player_splits << endl;
     }
 };
 
@@ -534,12 +550,17 @@ void Blackjack::Play(Card_Shoe sim_shoe, Absent_Map sim_map, Simulation_Results 
 }
 
 Simulation_Results Blackjack::Simulate(int num_decks, Absent_Map Card_Count, int n, int Bet_Amount){
+    auto start = chrono::high_resolution_clock::now();
     Simulation_Results ans;
+    ans.bet_size = Bet_Amount;
     Card_Shoe Shoe(num_decks);
     for(int i = 0; i < n; i++){
         Shoe.New_Shoe(Card_Count);
         Play(Shoe, Card_Count, ans, Bet_Amount);
     }
+    auto end = chrono::high_resolution_clock::now();
+    chrono::duration<double> duration = end - start;
+    ans.time = duration.count();
     return ans;
 }
 

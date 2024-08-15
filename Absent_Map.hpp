@@ -7,6 +7,7 @@
 #include <random>
 #include <string>
 #include <cmath>
+#include <chrono>
 
 class Absent_Map{
     private:
