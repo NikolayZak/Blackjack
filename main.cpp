@@ -1,26 +1,34 @@
 #include "Blackjack.hpp"
-
+#include "Stats.hpp"
 
 #define NUMBER_OF_DECKS 8
-#define BET_SIZE 10
-
-
-
-
+#define CONFIDENCE_LEVEL 0.95
 
 int main(){
+      // Setup
       Blackjack BJ;
       Absent_Map test_map(NUMBER_OF_DECKS);
-      Hand test_hand;
+      int trials = 100;
+      int simulations = 100;
+      vector<double> data;
 
-      // Scales to 1 deck
-      for(int i = 0; i < NUMBER_OF_DECKS; i++){
 
+      // Simulations
+      auto start = chrono::high_resolution_clock::now();
+      for(int i = 0; i < simulations; i++){
+            data.push_back(BJ.Pre_Win_Chance(NUMBER_OF_DECKS, test_map, trials));
       }
-      for(int i = 0; i < 100; i++){
+      auto confidence_interval = calculate_confidence_interval(data, CONFIDENCE_LEVEL);
 
-      }
-      Simulation_Results Sim = BJ.Simulate(NUMBER_OF_DECKS, test_map, 100, BET_SIZE);
-      Sim.Print();
+      // printing
+      double variance = (confidence_interval.second - confidence_interval.first) / 2;
+      double average_return = confidence_interval.first + variance;
+      auto end = chrono::high_resolution_clock::now();
+      chrono::duration<double> duration = end - start;
+      cout << "Time Elapsed: " << (int)duration.count() / 60 << " Minutes " << (int)duration.count() % 60 << " Seconds\n";
+      cout << "Number of Rounds: " << trials * simulations << endl;
+      cout << "Rate of Return With " << 100 * CONFIDENCE_LEVEL << "% " << "Confidence: " << confidence_interval.first << " to " << confidence_interval.second << endl;
+      cout << "Average Return: " << average_return << " With Varience of: " << variance << endl;
       return 0;
 }
+ 
