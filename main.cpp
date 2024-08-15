@@ -18,12 +18,12 @@ int main(){
       for(int i = 0; i < simulations; i++){
             data.push_back(BJ.Pre_Win_Chance(NUMBER_OF_DECKS, test_map, trials));
       }
-      auto confidence_interval = calculate_confidence_interval(data, CONFIDENCE_LEVEL);
+      auto end = chrono::high_resolution_clock::now();
 
       // printing
+      auto confidence_interval = calculate_confidence_interval(data, CONFIDENCE_LEVEL);
       double variance = (confidence_interval.second - confidence_interval.first) / 2;
       double average_return = confidence_interval.first + variance;
-      auto end = chrono::high_resolution_clock::now();
       chrono::duration<double> duration = end - start;
       cout << "Time Elapsed: " << (int)duration.count() / 60 << " Minutes " << (int)duration.count() % 60 << " Seconds\n";
       cout << "Number of Rounds: " << trials * simulations << endl;
