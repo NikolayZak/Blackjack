@@ -29,3 +29,17 @@ std::pair<double, double> calculate_confidence_interval(const std::vector<double
     double margin_of_error = t_value * standard_error;
     return std::make_pair(mean - margin_of_error, mean + margin_of_error);
 }
+
+std::pair<int, int> findClosestRectangleSides(int area) {
+    int a = static_cast<int>(std::sqrt(area)); // Start with the square root of the area
+
+    // Decrease a until we find a divisor of the area
+    while (area % a != 0) {
+        a--;
+    }
+
+    // Calculate the other side length
+    int b = area / a;
+
+    return {a, b};
+}
