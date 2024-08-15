@@ -470,27 +470,19 @@ void Blackjack::Play(Card_Shoe sim_shoe, Absent_Map sim_map, Simulation_Results 
                 choice = Best_Move(sim_map, Stephen.hands[1], Tom.Dealer_Card());
             }
         }
-        split = false;
     }
-    cout << "Stephen's Hand: ";
-    for(int i = 0; i < (int)Stephen.hands[0].cards.size(); i++){
-        cout << Stephen.hands[0].cards[i] << " ";
-    }
-    cout << " | Total " << Stephen.hands[0].High_Total();
-    cout << endl << "Dealer's Card: " << Tom.Dealer_Card();
+
     // blackjack not counted as a win
     if(Stephen.blackjack){
         tally.player_blackjack++;
         Stephen.Win();
         tally.player_balance += Stephen.credit;
-        cout << endl;
         return;
     }
 
     // Evaluate
     Tom.Call(sim_shoe);
     int D_total = Tom.Total();
-    cout << " | Tom's Total: " << D_total << endl << endl;
     int S_total = Stephen.hands[0].High_Total();
 
         // Player Bust
@@ -506,7 +498,7 @@ void Blackjack::Play(Card_Shoe sim_shoe, Absent_Map sim_map, Simulation_Results 
         Stephen.Lose();
         tally.player_losses++;
         // Player Win
-    }else if(S_total < D_total){
+    }else if(S_total > D_total){
         Stephen.Win();
         tally.player_wins++;
         // Push
@@ -538,6 +530,7 @@ void Blackjack::Play(Card_Shoe sim_shoe, Absent_Map sim_map, Simulation_Results 
         }
     }
     tally.player_balance += Stephen.credit;
+    split = false;
 }
 
 Simulation_Results Blackjack::Simulate(int num_decks, Absent_Map Card_Count, int n, int Bet_Amount){
