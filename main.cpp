@@ -16,8 +16,8 @@ int main(){
     auto start = chrono::high_resolution_clock::now();
     Simulation_Results Sim = BJ.Simulate(NUMBER_OF_DECKS, test_map, 100, BET_SIZE);
     auto end = chrono::high_resolution_clock::now();
-    auto duration = chrono::duration_cast<chrono::microseconds>(end - start).count();
-    cout << "Time Elapsed: " << duration << endl;
+    chrono::duration<double> duration = end - start;
+    cout << "Time taken by function: " << duration.count() << " seconds" << std::endl;
     cout << "Rounds Played: " << Sim.rounds_played << endl;
     cout << "Bet Size: " << BET_SIZE << endl;
     cout << "Player Balance: " << Sim.player_balance << endl;
