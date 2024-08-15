@@ -209,20 +209,22 @@ struct Move{
 
 struct Simulation_Results{
     int rounds_played;
-    int house_balance;
+    int player_balance;
     int player_pushes;
     int player_wins;
     int player_losses;
     int player_splits;
     int player_doubles;
+    int player_blackjack;
     Simulation_Results(){
         rounds_played = 0;
-        house_balance = 0;
+        player_balance = 0;
         player_wins = 0;
         player_losses = 0;
         player_pushes = 0;
         player_doubles = 0;
         player_splits = 0;
+        player_blackjack = 0;
     }
 };
 
@@ -241,6 +243,7 @@ struct EV_Results{
 
 class Blackjack{
    private:
+    bool split;
     double Risk_Of_Ruin(double winRate, double lossRate, double averageWin, double averageLoss, double maxRiskPercent, double tradingCapital); // good
     void Stand_Rec(Absent_Map a_map, int my_total, Hand dealer_hand, EV_Results &tally);
     void Split_Rec(Absent_Map a_map, Hand my_hand, int dealer_card, double Multiplier, double &Expected_Value);
@@ -248,17 +251,17 @@ class Blackjack{
     double Stand_EV(Absent_Map a_map, Hand my_hand, int dealer_card);
     double Hit_EV(Absent_Map a_map, Hand my_hand, int dealer_card);
     double Split_EV(Absent_Map a_map, Hand my_hand, int dealer_card);
-    void Play(Card_Shoe sim_shoe, Absent_Map sim_map, Simulation_Results &tally);
+    void Play(Card_Shoe sim_shoe, Absent_Map sim_map, Simulation_Results &tally, int Bet_Amount);
 
    public:
     Blackjack();
     ~Blackjack();
     Move Best_Move(const Absent_Map &a_map, const Hand &my_hand, const int &dealer_card);
-    Simulation_Results Simulate(int num_decks, Absent_Map Card_Count, int n);
+    Simulation_Results Simulate(int num_decks, Absent_Map Card_Count, int n, int Bet_Amount);
 };
 
 Blackjack::Blackjack(){
-    // nothing
+    split = false;
 }
 
 Blackjack::~Blackjack(){
@@ -393,7 +396,7 @@ Move Blackjack::Best_Move(const Absent_Map &a_map, const Hand &my_hand, const in
     ans.stand_EV = Stand_EV(a_map, my_hand, dealer_card);
     ans.hit_EV = Hit_EV(a_map, my_hand, dealer_card);
     ans.double_EV = ans.hit_EV * 2;
-    if(my_hand.Can_Split()){
+    if(my_hand.Can_Split() && !split){
         ans.split_EV = Split_EV(a_map, my_hand, dealer_card);
     }else{
         ans.split_EV = -10;
@@ -406,6 +409,10 @@ Move Blackjack::Best_Move(const Absent_Map &a_map, const Hand &my_hand, const in
         largest = ans.hit_EV;
         ans.best = 'h';
     }
+    // check to see if a split has occured
+    if(split){
+        return ans;
+    }
     if (ans.double_EV > largest) {
         largest = ans.double_EV;
         ans.best = 'd';
@@ -417,40 +424,130 @@ Move Blackjack::Best_Move(const Absent_Map &a_map, const Hand &my_hand, const in
     return ans;
 }
 
-void Blackjack::Play(Card_Shoe sim_shoe, Absent_Map sim_map, Simulation_Results &tally){
+void Blackjack::Play(Card_Shoe sim_shoe, Absent_Map sim_map, Simulation_Results &tally, int Bet_Amount){
     Dealer Tom;
     Player Stephen(0);
-    Stephen.Deal_In(sim_shoe, 10);
+    tally.rounds_played++;
+    Stephen.Deal_In(sim_shoe, Bet_Amount);
     Tom.Deal_In(sim_shoe);
     sim_map.Add(Stephen.hands[0].cards[0]);
     sim_map.Add(Stephen.hands[0].cards[1]);
     sim_map.Add(Tom.Dealer_Card());
     Move choice = Best_Move(sim_map, Stephen.hands[0], Tom.Dealer_Card());
     while(choice.best != 's'){
-        if(choice.best == 'd'){
+        if(choice.best == 'd'){ // Double
             Stephen.Double(sim_shoe);
             tally.player_doubles++;
             choice.best = 's'; // end turn
-        }else if(choice.best == 'h'){
+        }else if(choice.best == 'h'){ // Hit
             Stephen.Hit(sim_shoe, 0);
             sim_map.Add(Stephen.hands[0].cards.back());
             if(Stephen.hands[0].High_Total() > 21){
-                choice.best = 's'; // end turn
-            }else{
+                choice.best = 's'; // bust -> end turn
+            }else{ // keep going
                 choice = Best_Move(sim_map, Stephen.hands[0], Tom.Dealer_Card());
             }
+        }else if(choice.best == 'p'){ // split
+            split = true;
+            tally.player_splits++;
+            Stephen.Split(sim_shoe);
+            sim_map.Add(Stephen.hands[0].cards.back());
+            sim_map.Add(Stephen.hands[1].cards.back());
+            choice = Best_Move(sim_map, Stephen.hands[0], Tom.Dealer_Card()); // keep going on the first hand
         }
     }
+
+    // case split
+    if(split){
+        choice = Best_Move(sim_map, Stephen.hands[1], Tom.Dealer_Card());
+        while(choice.best != 's'){
+            // Implied Hit
+            Stephen.Hit(sim_shoe, 1);
+            sim_map.Add(Stephen.hands[1].cards.back());
+            if(Stephen.hands[1].High_Total() > 21){
+                choice.best = 's'; // end turn
+            }else{
+                choice = Best_Move(sim_map, Stephen.hands[1], Tom.Dealer_Card());
+            }
+        }
+        split = false;
+    }
+    cout << "Stephen's Hand: ";
+    for(int i = 0; i < (int)Stephen.hands[0].cards.size(); i++){
+        cout << Stephen.hands[0].cards[i] << " ";
+    }
+    cout << " | Total " << Stephen.hands[0].High_Total();
+    cout << endl << "Dealer's Card: " << Tom.Dealer_Card();
+    // blackjack not counted as a win
+    if(Stephen.blackjack){
+        tally.player_blackjack++;
+        Stephen.Win();
+        tally.player_balance += Stephen.credit;
+        cout << endl;
+        return;
+    }
+
+    // Evaluate
+    Tom.Call(sim_shoe);
+    int D_total = Tom.Total();
+    cout << " | Tom's Total: " << D_total << endl << endl;
+    int S_total = Stephen.hands[0].High_Total();
+
+        // Player Bust
+    if(S_total > 21){
+        Stephen.Lose();
+        tally.player_losses++;
+        // Dealer Bust
+    }else if(D_total > 21){
+        Stephen.Win();
+        tally.player_wins++;
+        // Dealer Win
+    }else if(D_total > S_total){
+        Stephen.Lose();
+        tally.player_losses++;
+        // Player Win
+    }else if(S_total < D_total){
+        Stephen.Win();
+        tally.player_wins++;
+        // Push
+    }else{
+        tally.player_pushes++;
+    }
+
+    // split evaluation
+    if(split){
+        S_total = Stephen.hands[1].High_Total();
+            if(S_total > 21){
+            Stephen.Lose();
+            tally.player_losses++;
+            // Dealer Bust
+        }else if(D_total > 21){
+            Stephen.Win();
+            tally.player_wins++;
+            // Dealer Win
+        }else if(D_total > S_total){
+            Stephen.Lose();
+            tally.player_losses++;
+            // Player Win
+        }else if(S_total < D_total){
+            Stephen.Win();
+            tally.player_wins++;
+            // Push
+        }else{
+            tally.player_pushes++;
+        }
+    }
+    tally.player_balance += Stephen.credit;
 }
 
-Simulation_Results Blackjack::Simulate(int num_decks, Absent_Map Card_Count, int n){
+Simulation_Results Blackjack::Simulate(int num_decks, Absent_Map Card_Count, int n, int Bet_Amount){
     Simulation_Results ans;
     Card_Shoe Shoe(num_decks);
-    Shoe.New_Shoe(Card_Count);
     for(int i = 0; i < n; i++){
-        Play(Shoe, Card_Count, ans);
-        Shoe.Permutate();
+        Shoe.New_Shoe(Card_Count);
+        Play(Shoe, Card_Count, ans, Bet_Amount);
     }
+    return ans;
 }
 
 // ****************************************************************************************************************************************************************
