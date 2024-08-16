@@ -1,12 +1,13 @@
 #include "Blackjack.hpp"
 #include "Stats.hpp"
 
-#define NUMBER_OF_DECKS 8
+#define NUMBER_OF_DECKS 1
 #define CONFIDENCE_LEVEL 0.95
 
 // TEST_RUNS MUST BE DIVISIBLE BY 2!!!
 #define TEST_RUNS 10000
 
+/*
 int main(){
       // Setup
       Blackjack BJ;
@@ -39,4 +40,22 @@ int main(){
       }
       return 0;
 }
- 
+*/
+
+int main(){
+      Blackjack BJ;
+      Absent_Map test_map(NUMBER_OF_DECKS);
+
+      //test_map.Add(10);
+      //test_map.Add(2);
+      //test_map.Add(3);
+      Hand my_hand;
+      my_hand.Add(10);
+      my_hand.Add(2);
+      Move ans = BJ.Best_Move(test_map, my_hand, 3);
+      cout << "Double_EV: " << ans.double_EV << endl;
+      cout << "Hit_EV: " << ans.hit_EV << endl;
+      cout << "Stand_EV: " << ans.stand_EV << endl;
+      cout << "Split_EV: " << ans.split_EV << endl;
+      cout << "Best: " << ans.best << endl;
+}
