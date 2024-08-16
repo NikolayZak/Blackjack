@@ -7,6 +7,8 @@
 class Blackjack{
    private:
     bool split;
+    vector<Hashed_Query> Hashed_hands[10][2];
+    vector<Move> Hashed_ans[10][2];
     double Risk_Of_Ruin(double winRate, double lossRate, double averageWin, double averageLoss, double maxRiskPercent, double tradingCapital); // good
     void Stand_Rec(Absent_Map a_map, int my_total, Hand dealer_hand, EV_Results &tally);
     void Split_Rec(Absent_Map a_map, Hand my_hand, int dealer_card, double Multiplier, double &Expected_Value);

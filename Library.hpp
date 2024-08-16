@@ -18,10 +18,10 @@ struct Hand {
 
 struct Player{
     Hand hands[2];
-    bool split;
-    bool blackjack;
     int credit;
     int wager;
+    bool split;
+    bool blackjack;
     
     Player(int money);
     ~Player();
@@ -58,6 +58,7 @@ struct Move{
 };
 
 struct Simulation_Results{
+    double time;
     int rounds_played;
     int player_balance;
     int player_pushes;
@@ -66,7 +67,6 @@ struct Simulation_Results{
     int player_splits;
     int player_doubles;
     int player_blackjack;
-    double time;
     int bet_size;
     Simulation_Results();
     void Print();
@@ -78,6 +78,12 @@ struct EV_Results{
     double push_P;
     double prob_hand;
     EV_Results();
+};
+
+struct Hashed_Query{
+    Absent_Map map;
+    int total;
+    Hashed_Query(const Absent_Map &map, int high_total);
 };
 
 #endif

@@ -130,6 +130,16 @@ double Blackjack::Split_EV(Absent_Map a_map, Hand my_hand, int dealer_card){
 }
 
 Move Blackjack::Best_Move(const Absent_Map &a_map, const Hand &my_hand, const int &dealer_card){
+    // check hashed
+    for(int i = 0; i < (int)Hashed_hands[dealer_card - 1][my_hand.Ace].size(); i++){
+        if(Hashed_hands[dealer_card - 1][my_hand.Ace][i].total == my_hand.High_Total()){
+            if(Hashed_hands[dealer_card - 1][my_hand.Ace][i].map == a_map){
+                return Hashed_ans[dealer_card - 1][my_hand.Ace][i];
+            }
+        }
+    }
+    
+
     Move ans;
     ans.stand_EV = Stand_EV(a_map, my_hand, dealer_card);
     ans.hit_EV = Hit_EV(a_map, my_hand, dealer_card);
@@ -158,6 +168,11 @@ Move Blackjack::Best_Move(const Absent_Map &a_map, const Hand &my_hand, const in
     if (ans.split_EV > largest) {
         ans.best = 'p';
     }
+
+    // Hash answer
+    Hashed_Query new_hash(a_map, my_hand.High_Total());
+    Hashed_hands[dealer_card - 1][my_hand.Ace].push_back(new_hash);
+    Hashed_ans[dealer_card - 1][my_hand.Ace].push_back(ans);
 
     return ans;
 }
