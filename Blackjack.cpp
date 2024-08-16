@@ -5,7 +5,12 @@ Blackjack::Blackjack(){
 }
 
 Blackjack::~Blackjack(){
-    // nothing
+    for(int i = 0; i < 10; i++){
+        for(int j = 0; j < 2; j++){
+            Hashed_hands[i][j].clear();
+            Hashed_ans[i][j].clear();
+        }
+    }
 }
 
 double Blackjack::Risk_Of_Ruin(double winRate, double lossRate, double averageWin, double averageLoss, double maxRiskPercent, double tradingCapital) {
