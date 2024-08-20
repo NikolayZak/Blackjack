@@ -1,6 +1,6 @@
 Blackjack Probability Theory
 
-let i be any (11 choose 2) hands assuming every card is available for repetition
+let i be any (11 choose 2) = 55 hands assuming every card is available for repetition
 let j be any 10 cards the dealer could have
 where i + j != 21
 
