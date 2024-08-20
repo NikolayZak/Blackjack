@@ -1,0 +1,20 @@
+Blackjack Probability Theory
+
+let i be any (11 choose 2) hands assuming every card is available for repetition
+let j be any 10 cards the dealer could have
+where i + j != 21
+
+let i` be Hand[i] with n` drawn cards
+let I be Hand[i] with 1 less card
+Split_EV is only computed if the hand is splitable
+
+EV(Game) = P(Hand[i]) * P(D_Card[j]) * Max_EV(Hand[i], D_Card[j]) + P(Blackjack) * 2.5
+Max_EV(Hand[i], D_Card[j]) = Max(Stand_EV, Double_EV, Hit_EV, Split_EV)
+Stand_EV = P_Win(Hand[i], D_Card[j]) * 2
+Double_EV = P_Win(Hand[i`], D_Card[j]) * 4
+Hit_EV = (P_Win(Hand[i`]) + P_win(Hand[i``]) + ... + P_win(Hand[i`n])) * 2
+Split_EV = Max_EV(Hand[I'], D_Card[j]) * 2
+P_Win = P(Dealer_Bust) + P(Player_Win)
+Dealer_Bust = Player_total < 22 && Dealer_Total > 21
+Player_Win = Player_total < 22 && Dealer_Total < Player_total
+Blackjack = P(10) * P(Ace)
