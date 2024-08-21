@@ -179,7 +179,7 @@ EV_Results::EV_Results(){
     win_P = 0;
     loss_P = 0;
     push_P = 0;
-    prob_hand = 1;
+    current_hand_P = 1;
 }
 
 Hashed_Query::Hashed_Query(const Absent_Map &a_map, int high_total) : map(a_map){

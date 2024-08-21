@@ -1,5 +1,5 @@
 #include "Blackjack.hpp"
-
+/*
 Blackjack::Blackjack(){
     split = false;
 }
@@ -313,3 +313,4 @@ double Blackjack::Pre_Win_Chance(int num_decks, Absent_Map Card_Count, int n){
     double Win_Chance = (((double)ans.player_wins / total_games) * 2 + ((double)ans.player_blackjack / total_games) * 2.5);
     return Win_Chance;
 }
+*/

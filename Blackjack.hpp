@@ -4,6 +4,16 @@
 // Nikolay Zakirov, 2024-08-05
 #include "Library.hpp"
 
+
+class Blackjack{
+    private:
+    // private stuff: shhhh
+
+    public:
+    double Game_EV(Absent_Map a_map);
+};
+
+/*
 class Blackjack{
    private:
     bool split;
@@ -28,9 +38,6 @@ class Blackjack{
 
 // ****************************************************************************************************************************************************************
 
-
-
-/*
 
 double Blackjack::Bust_Chance(Hand my_hand){
     if(my_hand.Low_Total() > 13){// check for odds of not busting and invert it
