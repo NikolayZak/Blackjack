@@ -50,11 +50,8 @@ class Dealer{
 };
 
 struct Move{
-    double stand_EV;
-    double hit_EV;
-    double double_EV;
-    double split_EV;
-    char best;
+    double EV;
+    char name;
 };
 
 struct Simulation_Results{
@@ -76,7 +73,7 @@ struct EV_Results{
     double win_P;
     double loss_P;
     double push_P;
-    double prob_hand;
+    double current_hand_P;
     EV_Results();
 };
 
