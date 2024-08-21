@@ -26,7 +26,16 @@ vector<Move> Blackjack::Choice_EV(const Absent_Map &pool, const Hand &current, i
 }
 
 double Blackjack::Game_EV(const Absent_Map &pool){
-
+    int D_Card, first_card, second_card;
+    for(D_Card = 1; D_Card < 11; D_Card++){
+        for(first_card = 1; first_card < 11; first_card++){
+            second_card = first_card;
+            while(second_card <= 11){
+                // caculate the hand
+                second_card++;
+            }
+        }
+    }
 }
 
 
