@@ -8,22 +8,24 @@
 class Blackjack{
     private:
     // shhh private stuff
+    void Stand_Rec(Absent_Map pool, Hand current, int Dealer_Card, Move ans);
+    Move Stand_EV(const Absent_Map &pool, const Hand &current, int Dealer_Card);
 
     public:
-    double BJ_EV();
+    double BJ_EV(Absent_Map &pool);
     vector<Move> Choice_EV(const Absent_Map &pool, const Hand &current, int Dealer_Card);
-    double Game_EV(const Absent_Map &a_map);
+    double Game_EV(const Absent_Map &pool);
 };
 
-double Blackjack::BJ_EV(){
-    return source.Probability(10) * source.Probability(1) * 2.5;
+double Blackjack::BJ_EV(Absent_Map &pool){
+    return pool.Probability(10) * pool.Probability(1) * 2.5;
 }
 
-vector<Move> Blackjack::Choice_EV(const Absent_Map &pool,const Hand &current, int Dealer_Card){
+vector<Move> Blackjack::Choice_EV(const Absent_Map &pool, const Hand &current, int Dealer_Card){
 
 }
 
-double Blackjack::Game_EV(const Absent_Map &a_map){
+double Blackjack::Game_EV(const Absent_Map &pool){
 
 }
 
