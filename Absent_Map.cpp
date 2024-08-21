@@ -41,7 +41,7 @@ void Absent_Map::Clear(){
     remaining_cards[9] = duplicates * 4; // 10's
 }
 
-double Absent_Map::Probability(int Theta){
+double Absent_Map::Probability(int Theta) const{
     return (double)remaining_cards[Theta - 1]/(double)cards;
 }
 
@@ -49,11 +49,11 @@ int Absent_Map::Count(int Theta) const {
     return remaining_cards[Theta - 1];
 }
 
-int Absent_Map::Cards_Left(){
+int Absent_Map::Cards_Left() const{
     return cards;
 }
 
-bool Absent_Map::operator==(const Absent_Map &other){
+bool Absent_Map::operator==(const Absent_Map &other) const{
     if(cards == other.cards){
         for(int i = 0; i < 10; i++){
             if(remaining_cards[i] != other.remaining_cards[i]){

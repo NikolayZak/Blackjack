@@ -4,14 +4,26 @@
 // Nikolay Zakirov, 2024-08-05
 #include "Library.hpp"
 
-
+// EV(Game) = P(Hand[i]) * P(D_Card[j]) * Max_EV(Hand[i], D_Card[j]) + P(Blackjack) * 2.5
 class Blackjack{
     private:
     // private stuff: shhhh
+    const Absent_Map source; // DON'T CHANGE THE SOURCE
 
     public:
-    double Game_EV(Absent_Map a_map);
+    double BJ_EV() const;
+    vector<Move> Choice_EV(Hand current, int Dealer_Card);
+    double Game_EV(const Absent_Map &a_map);
 };
+
+double Blackjack::BJ_EV() const{
+    return source.Probability(10) * source.Probability(1) * 2.5;
+}
+
+double Game_EV(const Absent_Map &a_map){
+
+}
+
 
 /*
 class Blackjack{

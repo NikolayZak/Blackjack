@@ -20,10 +20,10 @@ class Absent_Map{
     void Add(int drawn);
     void Remove(int Theta);
     void Clear();
-    double Probability(int Theta);
+    double Probability(int Theta) const;
     int Count(int Theta) const;
-    int Cards_Left();
-    bool operator==(const Absent_Map &other);
+    int Cards_Left() const;
+    bool operator==(const Absent_Map &other) const;
     Absent_Map(int number_of_decks);
     Absent_Map(const Absent_Map &a_map);
     ~Absent_Map();
