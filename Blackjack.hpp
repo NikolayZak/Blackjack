@@ -8,91 +8,22 @@
 class Blackjack{
     private:
     // shhh private stuff
-    void Stand_Rec(Absent_Map pool, int my_total, Hand Dealer_Hand, double &multiplier, Move &ans);
-    Move Stand_EV(const Absent_Map &pool, const Hand &current, int Dealer_Card);
-    void Hit_Rec(Absent_Map pool, Hand current, int Dealer_Card, Move &ans);
-    Move Hit_EV(const Absent_Map &pool, const Hand &current, int Dealer_Card);
-    void Double_Rec(Absent_Map pool, Hand current, int Dealer_Card, Move &ans);
-    Move Double_EV(const Absent_Map &pool, const Hand &current, int Dealer_Card);
-    void Split_Rec(Absent_Map pool, Hand current, int Dealer_Card, Move &ans);
-    Move Split_EV(const Absent_Map &pool, const Hand &current, int Dealer_Card);
+    void Stand_Rec(Absent_Map pool, int my_total, Hand dealer_hand, double multiplier, Move &ans);
+    Move Stand_EV(const Absent_Map &pool, const Hand &current, int dealer_card);
+    void Hit_Rec(Absent_Map pool, Hand current, int dealer_card, double multiplier, Move &ans);
+    //Move Hit_EV(const Absent_Map &pool, const Hand &current, int dealer_card);
+    void Double_Rec(Absent_Map pool, Hand current, int dealer_card, Move &ans);
+    Move Double_EV(const Absent_Map &pool, const Hand &current, int dealer_card);
+    void Split_Rec(Absent_Map pool, Hand current, int dealer_card, Move &ans);
+    Move Split_EV(const Absent_Map &pool, const Hand &current, int dealer_card);
 
     public:
+    Move Hit_EV(const Absent_Map &pool, const Hand &current, int dealer_card);
     double BJ_EV(Absent_Map &pool);
     vector<Move> Choice_EV(const Absent_Map &pool, const Hand &current, int Dealer_Card);
     double Game_EV(const Absent_Map &pool);
 };
 
-double Blackjack::BJ_EV(Absent_Map &pool){
-    return pool.Probability(10) * pool.Probability(1) * 2.5;
-}
-
-void Blackjack::Stand_Rec(Absent_Map pool, int my_total, Hand Dealer_Hand, double &multiplier, Move &ans){
-    // base case: Dealer has 17 or more
-    int dealer_total = Dealer_Hand.High_Total();
-    if(dealer_total > 16){                                // Dealer has a hand
-        if(dealer_total > 21 || dealer_total < my_total){ // Dealer Lose: Bust || Dealer Short
-            ans.EV += multiplier;
-        }
-        return;
-    } // implied else (Dealer needs to pickup)
-
-    int card_dups;
-    double original_prob = tally.prob_hand;
-    for(int i = 1; i < 11; i++){ // go through the map
-        card_dups = a_map.Count(i);
-        if(card_dups == 0){
-            continue; // no copies
-        }
-        
-        // iterate 1 hand
-        tally.prob_hand *= a_map.Probability(i);
-        dealer_hand.Add(i);
-        a_map.Add(i);
-        Stand_Rec(a_map, my_total, dealer_hand, tally);
-        dealer_hand.Remove_Last();
-        a_map.Remove(i);
-        tally.prob_hand = original_prob;
-    }
-}
-}
-
-vector<Move> Blackjack::Choice_EV(const Absent_Map &pool, const Hand &current, int Dealer_Card){
-    Move Stand = Stand_EV(pool, current, Dealer_Card);
-    Move Hit = Hit_EV(pool, current, Dealer_Card);
-    Move Double = Double_EV(pool, current, Dealer_Card);
-    Move Split = Split_EV(pool, current, Dealer_Card);
-    vector<Move> ans;
-    ans.push_back(Stand);
-    ans.push_back(Hit);
-    ans.push_back(Double);
-    ans.push_back(Split);
-    return ans;
-}
-
-double Blackjack::Game_EV(const Absent_Map &pool){
-    int D_Card, first_card, second_card;
-    vector<Move> tmp;
-    vector<double> ans;
-    Hand my_hand;
-    for(D_Card = 1; D_Card < 11; D_Card++){
-        for(first_card = 1; first_card < 11; first_card++){
-            my_hand.Add(first_card);
-            second_card = first_card;
-            while(second_card <= 11){
-                my_hand.Add(second_card);
-                tmp = Choice_EV(pool, my_hand, D_Card);
-                ans.push_back(tmp[0].EV); // best case
-                my_hand.Remove_Last();
-                second_card++;
-            }
-            my_hand.Remove_Last();
-        }
-    }
-    // return average EV
-    double total = accumulate(ans.begin(), ans.end(), 0.0);
-    return total / ans.size();
-}
 
 
 /*

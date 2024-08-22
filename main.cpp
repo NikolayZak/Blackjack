@@ -48,14 +48,10 @@ int main(){
 
       //test_map.Add(10);
       //test_map.Add(2);
-      //test_map.Add(3);
+      //test_map.Add(4);
       Hand my_hand;
-      my_hand.Add(10);
+      my_hand.Add(8);
       my_hand.Add(2);
-      Move ans = BJ.Best_Move(test_map, my_hand, 3);
-      cout << "Double_EV: " << ans.double_EV << endl;
-      cout << "Hit_EV: " << ans.hit_EV << endl;
-      cout << "Stand_EV: " << ans.stand_EV << endl;
-      cout << "Split_EV: " << ans.split_EV << endl;
-      cout << "Best: " << ans.best << endl;
+      Move ans = BJ.Hit_EV(test_map, my_hand, 4);
+      cout << ans.EV << ans.name << endl;
 }

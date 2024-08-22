@@ -1,7 +1,137 @@
 #include "Blackjack.hpp"
 
 
+double Blackjack::BJ_EV(Absent_Map &pool){
+    return pool.Probability(10) * pool.Probability(1) * 2.5;
+}
 
+void Blackjack::Stand_Rec(Absent_Map pool, int my_total, Hand dealer_hand, double multiplier, Move &ans){
+    // assuming the player_total is less then 22
+    // base case: Dealer has 17 or more: check for a player win
+    int dealer_total = dealer_hand.High_Total();
+    if(dealer_total > 16){                                // Dealer has a hand
+        if(dealer_total > 21 || dealer_total < my_total){ // Dealer Lose: Bust || Dealer Short
+            ans.EV += multiplier * 2.0; // wins pay 2 times
+        }
+        return;
+    } // implied else (Dealer needs to pickup)
+
+    int card_dups;
+    double original_prob = multiplier;
+    for(int i = 1; i < 11; i++){ // go through the map
+        card_dups = pool.Count(i);
+        if(card_dups == 0){
+            continue; // no copies
+        }
+        
+        // iterate 1 hand
+        multiplier *= pool.Probability(i);
+        dealer_hand.Add(i);
+        pool.Add(i);
+        Stand_Rec(pool, my_total, dealer_hand, multiplier, ans);
+        dealer_hand.Remove_Last();
+        pool.Remove(i);
+        multiplier = original_prob;
+    }
+}
+
+Move Blackjack::Stand_EV(const Absent_Map &pool, const Hand &current, int dealer_card){
+    Move ans;
+    ans.name = 's';
+    ans.EV = -1.0;
+    if(current.High_Total() > 21){
+        return ans;
+    }
+    Hand D_Hand;
+    D_Hand.Add(dealer_card);
+    Stand_Rec(pool, current.High_Total(), D_Hand, 1.0, ans);
+    return ans;
+}
+
+// will return stand if standing is the best option
+void Blackjack::Hit_Rec(Absent_Map pool, Hand current, int dealer_card, double multiplier, Move &ans){
+    // current < 21
+    int card_dups, my_total;
+    Move Stand, Hit, tmp;
+    Hit.EV = -1;
+    Hit.name = 'h';
+    tmp.EV = -1;
+    Stand = Stand_EV(pool, current, dealer_card);
+
+    double original_prob = multiplier;
+    for(int i = 1; i < 11; i++){ // go through the map
+        card_dups = pool.Count(i);
+        if(card_dups == 0){
+            continue; // no copies
+        }
+
+        my_total = current.High_Total();
+        if(my_total > 21){
+            break; // rest of hands will bust no point in computing
+        }
+
+        // compute
+        multiplier *= pool.Probability(i);
+        pool.Add(i);
+        current.Add(i);
+        Hit_Rec(pool, current, dealer_card, multiplier, tmp);
+
+        // save
+        Hit.EV += tmp.EV * multiplier * 2;
+
+        // reset
+        current.Remove_Last();
+        pool.Remove(i);
+        multiplier = original_prob;
+    }
+    if(Hit.EV > Stand.EV){
+        ans = Hit;
+    }else{
+        ans = Stand;
+    }
+}
+
+Move Blackjack::Hit_EV(const Absent_Map &pool, const Hand &current, int dealer_card){
+    Move ans;
+    Hit_Rec(pool, current, dealer_card, 1.0, ans);
+    return ans;
+}
+
+vector<Move> Blackjack::Choice_EV(const Absent_Map &pool, const Hand &current, int dealer_card){
+    Move Hit = Hit_EV(pool, current, dealer_card); // returns Stand if stand is the best option
+    //Move Double = Double_EV(pool, current, dealer_card);
+    //Move Split = Split_EV(pool, current, dealer_card);
+    vector<Move> ans;
+    ans.push_back(Hit);
+    //ans.push_back(Double);
+    //ans.push_back(Split);
+    sort(ans.begin(), ans.end(), [](const Move &a, const Move &b) { return a.EV > b.EV; });
+    return ans;
+}
+
+double Blackjack::Game_EV(const Absent_Map &pool){
+    int D_Card, first_card, second_card;
+    vector<Move> tmp;
+    vector<double> ans;
+    Hand my_hand;
+    for(D_Card = 1; D_Card < 11; D_Card++){
+        for(first_card = 1; first_card < 11; first_card++){
+            my_hand.Add(first_card);
+            second_card = first_card;
+            while(second_card <= 11){
+                my_hand.Add(second_card);
+                tmp = Choice_EV(pool, my_hand, D_Card);
+                ans.push_back(tmp[0].EV); // best case
+                my_hand.Remove_Last();
+                second_card++;
+            }
+            my_hand.Remove_Last();
+        }
+    }
+    // return average EV
+    double total = accumulate(ans.begin(), ans.end(), 0.0);
+    return total / ans.size();
+}
 
 
 /*
