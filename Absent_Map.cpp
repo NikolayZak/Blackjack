@@ -41,6 +41,7 @@ void Absent_Map::Clear(){
     remaining_cards[9] = duplicates * 4; // 10's
 }
 
+// MUST BE COMPUTED BEFORE ADDING TO POOL
 double Absent_Map::Probability(int Theta) const{
     return (double)remaining_cards[Theta - 1]/(double)cards;
 }

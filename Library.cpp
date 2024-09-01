@@ -40,16 +40,16 @@ void Hand::Remove_Last(){
     Ace = false;
 }
 
-// technical debt
+// technical debt : MUST BE COMPUTED AFTER ADDING CARD
 double Hand::Half_Permutation() const{
     double counter = 0;
     int target = cards.back();
-    for(int i = 0; i < (int)cards.size(); i++){
+    for(int i = 1; i < (int)cards.size(); i++){
         if(cards[i] == target){
             counter++;
         }
     }
-    return double(cards.size()) / counter;
+    return double(cards.size() - 1) / counter;
 }
 
 Hand::Hand(){
