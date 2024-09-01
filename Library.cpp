@@ -162,38 +162,6 @@ void Dealer::Clear(){
     hand.Clear();
 }
 // ******************************************************   Miscellaneous   ******************************************************
-Simulation_Results::Simulation_Results(){
-    rounds_played = 0;
-    player_balance = 0;
-    player_wins = 0;
-    player_losses = 0;
-    player_pushes = 0;
-    player_doubles = 0;
-    player_splits = 0;
-    player_blackjack = 0;
-    time = 0;
-    bet_size = 0;
-}
-
-void Simulation_Results::Print(){
-    cout << "Time Elapsed: " << time << " seconds" << endl;
-    cout << "Bet Size: " << bet_size << endl;
-    cout << "Rounds Played: " << rounds_played << endl;
-    cout << "Player Balance: " << player_balance << endl;
-    cout << "Player Wins: " << player_wins << endl;
-    cout << "Player Losses: " << player_losses << endl;
-    cout << "Player Pushes: " << player_pushes << endl;
-    cout << "Player Blackjacks: " << player_blackjack << endl;
-    cout << "Player Doubles: " << player_doubles << endl;
-    cout << "Player Splits: " << player_splits << endl;
-}
-
-EV_Results::EV_Results(){
-    win_P = 0;
-    loss_P = 0;
-    push_P = 0;
-    current_hand_P = 1;
-}
 
 Hashed_Query::Hashed_Query(const Absent_Map &a_map, int high_total) : map(a_map){
     total = high_total;

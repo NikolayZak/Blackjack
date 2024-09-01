@@ -10,9 +10,9 @@ int main(){
 
       Hand my_hand;
       my_hand.Add(10);
-      my_hand.Add(10);
+      my_hand.Add(6);
       test_map.Add(10);
       test_map.Add(10);
-      test_map.Add(10);
-      cout << BJ.Stand_EV(test_map, my_hand, 10) << endl;
+      test_map.Add(6);
+      BJ.Stats(test_map, my_hand, 10);
 }

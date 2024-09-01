@@ -29,8 +29,8 @@ void Blackjack::Stand_Rec(Absent_Map pool, int my_total, Hand dealer_hand, doubl
         }
         
         // iterate 1 hand
-        dealer_hand.Add(i);
         multiplier *= pool.Probability(i);
+        dealer_hand.Add(i);
         pool.Add(i);
         Stand_Rec(pool, my_total, dealer_hand, multiplier, EV);
         dealer_hand.Remove_Last();
@@ -40,6 +40,7 @@ void Blackjack::Stand_Rec(Absent_Map pool, int my_total, Hand dealer_hand, doubl
 }
 
 // returns the expected value of a stand in this position
+// technical debt : Add hashing
 double Blackjack::Stand_EV(const Absent_Map &pool, const Hand &current, int dealer_card){
     double ans = -1.0;
     if(current.High_Total() > 21){
@@ -51,3 +52,101 @@ double Blackjack::Stand_EV(const Absent_Map &pool, const Hand &current, int deal
     return ans;
 }
 
+double Blackjack::Hit_Rec(Absent_Map pool, Hand my_hand, int dealer_card, double multiplier){
+    // base case my_hand > 21
+    if(my_hand.High_Total() > 21){
+        return -1.0;
+    }
+
+    // compute Stand EV and Hit EV
+    double hit_ev = 0.0;
+    double stand_ev = Stand_EV(pool, my_hand, dealer_card) * multiplier;
+    double original_prob = multiplier; // save state
+    int card_dups;
+    for(int i = 1; i < 11; i++){
+        card_dups = pool.Count(i);
+        if(card_dups == 0){
+            continue; // no copies
+        }
+        multiplier *= pool.Probability(i);
+        my_hand.Add(i);
+        pool.Add(i);
+        hit_ev += Hit_Rec(pool, my_hand, dealer_card, multiplier) * multiplier;
+        my_hand.Remove_Last();
+        pool.Remove(i);
+        multiplier = original_prob;
+    }
+
+    if(stand_ev > hit_ev){
+        return stand_ev;
+    }
+    return hit_ev;
+}
+
+double Blackjack::Hit_EV(const Absent_Map &pool, const Hand &current, int dealer_card){
+    Absent_Map map = pool;
+    Hand my_hand = current;
+    double ans = 0.0;
+    double card_prob;
+    int card_dups;
+    for(int i = 1; i < 11; i++){
+        card_dups = map.Count(i);
+        if(card_dups == 0){
+            continue; // no copies
+        }
+        card_prob = map.Probability(i);
+        my_hand.Add(i);
+        map.Add(i);
+        ans += Hit_Rec(map, my_hand, dealer_card, 1.0) * card_prob;
+        my_hand.Remove_Last();
+        map.Remove(i);
+    }
+    return ans;
+}
+
+double Blackjack::Double_EV(const Absent_Map &pool, const Hand &current, int dealer_card){
+    Absent_Map map = pool;
+    Hand my_hand = current;
+    double ans = 0.0;
+    double card_prob;
+    int card_dups;
+    for(int i = 1; i < 11; i++){
+        card_dups = map.Count(i);
+        if(card_dups == 0){
+            continue; // no copies
+        }
+        card_prob = map.Probability(i);
+        my_hand.Add(i);
+        map.Add(i);
+        ans += Stand_EV(map, my_hand, dealer_card) * card_prob;
+        my_hand.Remove_Last();
+        map.Remove(i);
+    }
+    return ans * 2;
+}
+
+// assuming the hand can be split
+double Blackjack::Split_EV(const Absent_Map &pool, const Hand &current, int dealer_card){
+    Hand my_hand = current;
+    my_hand.Remove_Last();
+
+    if(my_hand.Ace){ // only 1 card when splitting aces
+        return Double_EV(pool, my_hand, dealer_card);
+    }
+
+    return Hit_EV(pool, my_hand, dealer_card) * 2;
+}
+
+void Blackjack::Stats(const Absent_Map &pool, const Hand &current, int dealer_card){
+    double S = Stand_EV(pool, current, dealer_card);
+    double H = Hit_EV(pool, current, dealer_card);
+    double D = Double_EV(pool, current, dealer_card);
+    cout << "Stand EV: " << S << endl;
+    cout << "Hit EV: " << H << endl;
+    cout << "Double EV: " << D << endl;
+
+    if(current.Can_Split()){
+        double P = Split_EV(pool, current, dealer_card);
+        cout << "Split EV: " << P << endl;
+    }
+}
