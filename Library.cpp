@@ -8,6 +8,7 @@ void Hand::Add(int card){
     }
 }
 
+// technical debt
 int Hand::High_Total() const {
     int total = 0;
     for (int card : cards) {
@@ -37,6 +38,18 @@ void Hand::Remove_Last(){
         }
     }
     Ace = false;
+}
+
+// technical debt
+double Hand::Half_Permutation() const{
+    double counter = 0;
+    int target = cards.back();
+    for(int i = 0; i < (int)cards.size(); i++){
+        if(cards[i] == target){
+            counter++;
+        }
+    }
+    return double(cards.size()) / counter;
 }
 
 Hand::Hand(){

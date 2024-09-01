@@ -4,7 +4,7 @@
 #include "Card_Shoe.hpp"
 
 struct Hand {
-    vector<int> cards;
+    vector<int> cards; // technical debt : use a custom vector with purpose built methods
     bool Ace;
 
     void Add(int card);
@@ -12,6 +12,7 @@ struct Hand {
     bool Can_Split() const;
     void Clear();
     void Remove_Last();
+    double Half_Permutation() const;
     Hand();
     ~Hand();
 };
