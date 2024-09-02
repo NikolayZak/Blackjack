@@ -4,7 +4,7 @@
 // Nikolay Zakirov, 2024-08-05
 #include "Library.hpp"
 
-// EV(Game) = P(Hand[i]) * P(D_Card[j]) * Max_EV(Hand[i], D_Card[j]) + P(Blackjack) * 2.5
+
 class Blackjack{
     private:
     // shhh private stuff
@@ -17,7 +17,8 @@ class Blackjack{
     double Hit_EV(const Absent_Map &pool, const Hand &current, int dealer_card);
     double Double_EV(const Absent_Map &pool, const Hand &current, int dealer_card);
     double Split_EV(const Absent_Map &pool, const Hand &current, int dealer_card);
-    void Stats(const Absent_Map &pool,const Hand &current, int dealer_card);
+    Move Best_Move(const Absent_Map &pool, const Hand &current, int dealer_card);
+    void Print_Stats(const Absent_Map &pool,const Hand &current, int dealer_card);
 };
 
 

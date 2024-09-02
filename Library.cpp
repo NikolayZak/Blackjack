@@ -163,6 +163,10 @@ void Dealer::Clear(){
 }
 // ******************************************************   Miscellaneous   ******************************************************
 
+void Move::Print(){
+    cout << name << " = " << EV << endl;
+}
+
 Hashed_Query::Hashed_Query(const Absent_Map &a_map, int high_total) : map(a_map){
     total = high_total;
 }

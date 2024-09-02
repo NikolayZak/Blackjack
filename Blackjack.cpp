@@ -137,7 +137,7 @@ double Blackjack::Split_EV(const Absent_Map &pool, const Hand &current, int deal
     return Hit_EV(pool, my_hand, dealer_card) * 2;
 }
 
-void Blackjack::Stats(const Absent_Map &pool, const Hand &current, int dealer_card){
+void Blackjack::Print_Stats(const Absent_Map &pool, const Hand &current, int dealer_card){
     double S = Stand_EV(pool, current, dealer_card);
     double H = Hit_EV(pool, current, dealer_card);
     double D = Double_EV(pool, current, dealer_card);
@@ -149,4 +149,31 @@ void Blackjack::Stats(const Absent_Map &pool, const Hand &current, int dealer_ca
         double P = Split_EV(pool, current, dealer_card);
         cout << "Split EV: " << P << endl;
     }
+}
+
+Move Blackjack::Best_Move(const Absent_Map &pool, const Hand &current, int dealer_card){
+    Move ans;   // compute values
+    double S = Stand_EV(pool, current, dealer_card);
+    double H = Hit_EV(pool, current, dealer_card);
+    double D = Double_EV(pool, current, dealer_card);
+    double P = -10.0;
+    if(current.Can_Split()){
+        P = Split_EV(pool, current, dealer_card);
+    }
+    // find max
+    ans.EV = S;
+    ans.name = 'S';
+    if(H > ans.EV){
+        ans.EV = H;
+        ans.name = 'H';
+    }
+    if(D > ans.EV){
+        ans.EV = D;
+        ans.name = 'D';
+    }
+    if(P > ans.EV){
+        ans.EV = P;
+        ans.name = 'P';
+    }
+    return ans;
 }
