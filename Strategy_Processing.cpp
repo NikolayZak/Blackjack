@@ -63,7 +63,7 @@ void Computed_Strategy_Chart::Configure(const Absent_Map &pool){
     current.Add(1);
     for(int i = 13; i < 21; i++){ // for every soft total
         for(int j = 1; j < 11; j++){ // for every dealer card
-            current.Add(i-1);
+            current.Add(i-11);
             soft_chart[i-13][j-1] = BJ.Best_Move(pool, current, j);
             cout << i << " VS " << j << " : ";
             soft_chart[i-13][j-1].Print();

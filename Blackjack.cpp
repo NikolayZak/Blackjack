@@ -39,15 +39,41 @@ void Blackjack::Stand_Rec(Absent_Map pool, int my_total, Hand dealer_hand, doubl
     }
 }
 
+double Blackjack::Dealer_Ace_Exception(Absent_Map pool, int my_total, Hand dealer_hand){
+    int card_dups;
+    double multy;
+    double ans = -1.0;
+    for(int i = 1; i < 10; i++){ // go through the map except 10
+        card_dups = pool.Count(i);
+        if(card_dups == 0){
+            continue; // no copies
+        }
+        
+        // iterate 1 hand
+        multy = (double)pool.Count(i) / (double)(pool.Cards_Left() - pool.Count(10));
+        dealer_hand.Add(i);
+        pool.Add(i);
+        Stand_Rec(pool, my_total, dealer_hand, multy, ans);
+        dealer_hand.Remove_Last();
+        pool.Remove(i);
+    }
+    return ans;
+}
+
 // returns the expected value of a stand in this position
 // technical debt : Add hashing
 double Blackjack::Stand_EV(const Absent_Map &pool, const Hand &current, int dealer_card){
+
     double ans = -1.0;
     if(current.High_Total() > 21){
         return ans;
     }
     Hand D_Hand;
     D_Hand.Add(dealer_card);
+
+    if(dealer_card == 1){
+        return Dealer_Ace_Exception(pool, current.High_Total(), D_Hand);
+    }
     Stand_Rec(pool, current.High_Total(), D_Hand, 1.0, ans);
     return ans;
 }

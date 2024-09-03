@@ -10,6 +10,7 @@ class Blackjack{
     // shhh private stuff
     void Stand_Rec(Absent_Map pool, int my_total, Hand dealer_hand, double multiplier, double &ans);
     double Hit_Rec(Absent_Map pool, Hand my_hand, int dealer_card, double multiplier);
+    double Dealer_Ace_Exception(Absent_Map pool, int my_total, Hand dealer_hand);
 
     public:
     double BJ_EV(Absent_Map &pool);

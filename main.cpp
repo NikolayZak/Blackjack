@@ -4,6 +4,7 @@
 #define NUMBER_OF_DECKS 1
 
 int main(){
+      Blackjack BJ;
       Absent_Map test_map(NUMBER_OF_DECKS);
       Computed_Strategy_Chart Chart;
       Chart.Configure(test_map);
