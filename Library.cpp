@@ -20,6 +20,17 @@ int Hand::High_Total() const {
     return total;
 }
 
+bool Hand::Is_Soft() const {
+    int total = 0;
+    for (int card : cards){
+        total += card;
+    }
+    if(Ace && total < 12){
+        return true;
+    }
+    return false;
+}
+
 bool Hand::Can_Split() const {
     return cards.size() == 2 && cards[0] == cards[1];
 }

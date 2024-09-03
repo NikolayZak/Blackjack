@@ -9,6 +9,7 @@ struct Hand {
 
     void Add(int card);
     int High_Total() const;
+    bool Is_Soft() const;
     bool Can_Split() const;
     void Clear();
     void Remove_Last();
