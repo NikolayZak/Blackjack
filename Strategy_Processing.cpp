@@ -1,4 +1,9 @@
 #include "Strategy_Processing.hpp"
+// TODO
+// Add many layers of hashing
+// Test to see if splitting on 3's and 4's is optimal
+
+
 
 //                         Dealer Upcard
 //  Hard Total| 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | A |
