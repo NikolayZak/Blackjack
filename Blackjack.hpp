@@ -14,8 +14,11 @@ class Blackjack{
     sqlite3* db;
     bool openDatabase();
     void closeDatabase();
+    // Blob Layout: Pool 0-55 | name 56-57 | my_hand_total 58-62 | soft 63 | dealer card 64-67
+    uint64_t BitBlob(const Absent_Map &pool, const Hand &current, int dealer_card);
+    bool getEVIfExists(uint64_t blob, double& ev);
+    void insertEV(uint64_t blob, double ev);
 
-    unsigned char* BitBlob(char name, const Absent_Map &pool, const Hand &current, int dealer_card);
     void Stand_Rec(Absent_Map pool, int my_total, Hand dealer_hand, double multiplier, double &ans);
     double Hit_Rec(Absent_Map pool, Hand my_hand, int dealer_card, double multiplier);
     double Dealer_Ace_Exception(Absent_Map pool, int my_total, Hand dealer_hand);
@@ -24,8 +27,6 @@ class Blackjack{
     Blackjack();
     ~Blackjack();
 
-    bool getEVIfExists(const unsigned char* blob, double& ev);
-    void insertEV(const unsigned char* blob, double ev);
 
     double BJ_EV(Absent_Map &pool);
     double Stand_EV(const Absent_Map &pool, const Hand &current, int dealer_card);

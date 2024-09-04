@@ -11,8 +11,26 @@ Blackjack::~Blackjack(){
     closeDatabase();
 }
 
+// Blob Layout: name 0-1 | pool 2-57 | my_hand_total 58-62 | soft 63
 unsigned char* BitBlob(char name, const Absent_Map &pool, const Hand &current, int dealer_card){
-    
+    uint64_t ans = pool.Compressed_Map();
+    ans << 2;
+    switch(name){
+    case 'H':
+        ans |= 0x0;
+        break;
+    case 'S':
+        ans |= 0x1;
+        break;
+    case 'D':
+        ans |= 0x2;
+        break;
+    case 'P':
+        ans |= 0x3;
+        break;
+    default:
+        break;
+    }
 }
 
 bool Blackjack::openDatabase() {
@@ -27,12 +45,13 @@ void Blackjack::closeDatabase() {
     }
 }
 
-bool Blackjack::getEVIfExists(const unsigned char* blob, double& ev) {
-    const char* selectSQL = "SELECT EV FROM EVTable WHERE packed_blob = ?;";
+bool Blackjack::getEVIfExists(uint64_t key, double& ev) {
+    const char* selectSQL = "SELECT EV FROM EVTable WHERE packed_key = ?;";
     sqlite3_stmt* stmt;
     int rc = sqlite3_prepare_v2(db, selectSQL, -1, &stmt, 0);
     if (rc == SQLITE_OK) {
-        sqlite3_bind_blob(stmt, 1, blob, 9, SQLITE_STATIC);  // Bind the blob
+        // Bind the 64-bit key as an integer
+        sqlite3_bind_int64(stmt, 1, key);
         rc = sqlite3_step(stmt);
         if (rc == SQLITE_ROW) {
             ev = sqlite3_column_double(stmt, 0);  // Retrieve the EV value
@@ -44,17 +63,21 @@ bool Blackjack::getEVIfExists(const unsigned char* blob, double& ev) {
     return false;  // Key does not exist
 }
 
-void Blackjack::insertEV(const unsigned char* blob, double ev) {
-    const char* insertSQL = "INSERT INTO EVTable (packed_blob, EV) VALUES (?, ?);";
+void Blackjack::insertEV(uint64_t key, double ev) {
+    const char* insertSQL = "INSERT INTO EVTable (packed_key, EV) VALUES (?, ?);";
     sqlite3_stmt* stmt;
     int rc = sqlite3_prepare_v2(db, insertSQL, -1, &stmt, 0);
     if (rc == SQLITE_OK) {
-        sqlite3_bind_blob(stmt, 1, blob, 9, SQLITE_STATIC);  // Bind the blob
-        sqlite3_bind_double(stmt, 2, ev);                    // Bind the EV value
-        sqlite3_step(stmt);
+        // Bind the 64-bit key as an integer
+        sqlite3_bind_int64(stmt, 1, key);
+        sqlite3_bind_double(stmt, 2, ev);  // Bind the EV value
+        rc = sqlite3_step(stmt);
+        if (rc != SQLITE_DONE) {
+            std::cerr << "Failed to insert data: " << sqlite3_errmsg(db) << std::endl;
+        }
         sqlite3_finalize(stmt);
     } else {
-        std::cerr << "Failed to insert data: " << sqlite3_errmsg(db) << std::endl;
+        std::cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << std::endl;
     }
 }
 

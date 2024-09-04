@@ -58,7 +58,7 @@ int Absent_Map::Cards_Left() const{
 }
 
 // Assuming each element from 0-8 in the map is BETWEEN 0-63 (6 bits) and the last element 9 is between 0-255 (8 bits)
-uint64_t Absent_Map::Compressed_Map(){
+uint64_t Absent_Map::Compressed_Map() const{
     uint64_t ans = 0;
     for(int i = 0; i < 8; i++){
         ans |= uint64_t(remaining_cards[i] & 0x1F) << (i * 6);
