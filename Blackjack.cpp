@@ -156,7 +156,7 @@ double Blackjack::Split_EV(const Absent_Map &pool, const Hand &current, int deal
     Hand my_hand = current;
     my_hand.Remove_Last();
 
-    if(my_hand.Ace){ // only 1 card when splitting aces
+    if(my_hand.Ace_count > 0){ // only 1 card when splitting aces
         return Double_EV(pool, my_hand, dealer_card);
     }
 

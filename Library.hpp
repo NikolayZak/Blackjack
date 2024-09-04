@@ -5,7 +5,9 @@
 
 struct Hand {
     vector<int> cards; // technical debt : use a custom vector with purpose built methods
-    bool Ace;
+    int total;
+    int Ace_count;
+    bool Soft;
 
     void Add(int card);
     int High_Total() const;

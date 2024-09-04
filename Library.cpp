@@ -4,31 +4,30 @@
 void Hand::Add(int card){
     cards.push_back(card);
     if(card == 1){
-        Ace = true;
+        Ace_count++;
+        if(total < 11){
+            total += 11;
+            Soft = true;
+        }else{
+            total++;
+        }
+    }else{
+        total+= card;
+    }
+
+    if(Soft && total > 21){
+        total -= 10;
+        Soft = false;
     }
 }
 
 // technical debt
 int Hand::High_Total() const {
-    int total = 0;
-    for (int card : cards) {
-        total += card;
-    }
-    if(Ace && total < 12){
-        total += 10;
-    }
     return total;
 }
 
 bool Hand::Is_Soft() const {
-    int total = 0;
-    for (int card : cards){
-        total += card;
-    }
-    if(Ace && total < 12){
-        return true;
-    }
-    return false;
+    return Soft;
 }
 
 bool Hand::Can_Split() const {
@@ -36,19 +35,27 @@ bool Hand::Can_Split() const {
 }
 
 void Hand::Clear(){
-    Ace = false;
+    Ace_count = 0;
+    Soft = false;
     cards.clear();
 }
 
 void Hand::Remove_Last(){
-    cards.pop_back();
-    for(int i = 0; i < (int)cards.size(); i++){
-        if(cards[i] == 1){
-            Ace = true;
-            return;
+    int last_card = cards.back();
+    if(last_card == 1){
+        Ace_count--;
+        if(Soft){
+            total -= 11;
+        }else{
+            total--;
+        }
+
+        if(Ace_count == 0){
+            Soft = false;
         }
     }
-    Ace = false;
+    total -= last_card;
+    cards.pop_back();
 }
 
 // technical debt : MUST BE COMPUTED AFTER ADDING CARD
@@ -64,7 +71,8 @@ double Hand::Half_Permutation() const{
 }
 
 Hand::Hand(){
-    Ace = false;
+    Ace_count = 0;
+    Soft = false;
 }
 
 Hand::~Hand(){
@@ -143,10 +151,7 @@ Dealer::~Dealer(){
 
 void Dealer::Hit(Card_Shoe &shoe){
     int draw = shoe.Deal();
-    if(draw == 1){
-        hand.Ace = true;
-    }
-    hand.cards.push_back(draw);
+    hand.Add(draw);
 }
 
 void Dealer::Deal_In(Card_Shoe &shoe){
