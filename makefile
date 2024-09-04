@@ -1,5 +1,6 @@
 CXX = g++
 CXXFLAGS = -Wall -std=c++11 -O3
+LDFLAGS = -L"C/sqlite" -lsqlite3
 
 TARGET = "BJ_Sim"
 
@@ -14,7 +15,7 @@ OBJ_FILES = Absent_Map.o \
 all: $(TARGET)
 
 $(TARGET): $(OBJ_FILES)
-	$(CXX) -o $(TARGET) $(OBJ_FILES)
+	$(CXX) -o $(TARGET) $(OBJ_FILES) $(LDFLAGS)
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@

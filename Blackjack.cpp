@@ -1,5 +1,64 @@
 #include "Blackjack.hpp"
 
+// ************************************************   DATABASE METHODS   ****************************************************************
+Blackjack::Blackjack(){
+    if (!openDatabase()) {
+        std::cerr << "Failed to open database." << std::endl;
+    }
+}
+
+Blackjack::~Blackjack(){
+    closeDatabase();
+}
+
+unsigned char* BitBlob(char name, const Absent_Map &pool, const Hand &current, int dealer_card){
+    
+}
+
+bool Blackjack::openDatabase() {
+    int rc = sqlite3_open(DATABASE, &db);
+    return rc == SQLITE_OK;
+}
+
+void Blackjack::closeDatabase() {
+    if (db) {
+        sqlite3_close(db);
+        db = nullptr;
+    }
+}
+
+bool Blackjack::getEVIfExists(const unsigned char* blob, double& ev) {
+    const char* selectSQL = "SELECT EV FROM EVTable WHERE packed_blob = ?;";
+    sqlite3_stmt* stmt;
+    int rc = sqlite3_prepare_v2(db, selectSQL, -1, &stmt, 0);
+    if (rc == SQLITE_OK) {
+        sqlite3_bind_blob(stmt, 1, blob, 9, SQLITE_STATIC);  // Bind the blob
+        rc = sqlite3_step(stmt);
+        if (rc == SQLITE_ROW) {
+            ev = sqlite3_column_double(stmt, 0);  // Retrieve the EV value
+            sqlite3_finalize(stmt);
+            return true;  // Key exists
+        }
+    }
+    sqlite3_finalize(stmt);
+    return false;  // Key does not exist
+}
+
+void Blackjack::insertEV(const unsigned char* blob, double ev) {
+    const char* insertSQL = "INSERT INTO EVTable (packed_blob, EV) VALUES (?, ?);";
+    sqlite3_stmt* stmt;
+    int rc = sqlite3_prepare_v2(db, insertSQL, -1, &stmt, 0);
+    if (rc == SQLITE_OK) {
+        sqlite3_bind_blob(stmt, 1, blob, 9, SQLITE_STATIC);  // Bind the blob
+        sqlite3_bind_double(stmt, 2, ev);                    // Bind the EV value
+        sqlite3_step(stmt);
+        sqlite3_finalize(stmt);
+    } else {
+        std::cerr << "Failed to insert data: " << sqlite3_errmsg(db) << std::endl;
+    }
+}
+
+// ****************************************************************************************************************************
 
 double Blackjack::BJ_EV(Absent_Map &pool){
     return pool.Probability(10) * pool.Probability(1) * 5; // blackjack pays 2.5, there are 2 ways to draw 2 cards

@@ -1,6 +1,9 @@
 #include "Absent_Map.hpp"
 
 Absent_Map::Absent_Map(int number_of_decks){
+    if(number_of_decks > 8){
+        std::cout << "COMPRESSION WILL FAIL" << std::endl;
+    }
     decks = number_of_decks;
     cards = number_of_decks * 52;
     duplicates = number_of_decks * 4;
@@ -52,6 +55,15 @@ int Absent_Map::Count(int Theta) const {
 
 int Absent_Map::Cards_Left() const{
     return cards;
+}
+
+// Assuming each element from 0-8 in the map is BETWEEN 0-63 (6 bits) and the last element 9 is between 0-255 (8 bits)
+uint64_t Absent_Map::Compressed_Map(){
+    uint64_t ans = 0;
+    for(int i = 0; i < 8; i++){
+        ans |= uint64_t(remaining_cards[i] & 0x1F) << (i * 6);
+    }
+    ans |= uint64_t(remaining_cards[8] & 0xFF) << 48;
 }
 
 bool Absent_Map::operator==(const Absent_Map &other) const{
