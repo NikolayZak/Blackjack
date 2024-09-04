@@ -38,20 +38,18 @@ void Hand::Clear(){
     Ace_count = 0;
     Soft = false;
     cards.clear();
+    total = 0;
 }
 
 void Hand::Remove_Last(){
     int last_card = cards.back();
     if(last_card == 1){
         Ace_count--;
-        if(Soft){
+        if(Soft && Ace_count == 0){
             total -= 11;
+            Soft = false;
         }else{
             total--;
-        }
-
-        if(Ace_count == 0){
-            Soft = false;
         }
     }
     total -= last_card;
@@ -73,6 +71,7 @@ double Hand::Half_Permutation() const{
 Hand::Hand(){
     Ace_count = 0;
     Soft = false;
+    total = 0;
 }
 
 Hand::~Hand(){
@@ -150,8 +149,7 @@ Dealer::~Dealer(){
 }
 
 void Dealer::Hit(Card_Shoe &shoe){
-    int draw = shoe.Deal();
-    hand.Add(draw);
+    hand.Add(shoe.Deal());
 }
 
 void Dealer::Deal_In(Card_Shoe &shoe){
