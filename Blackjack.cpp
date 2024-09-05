@@ -5,6 +5,7 @@ Blackjack::Blackjack(){
     if (!openDatabase()) {
         std::cerr << "Failed to open database." << std::endl;
     }
+    createEVTable();
 }
 
 Blackjack::~Blackjack(){
@@ -33,7 +34,7 @@ short Blackjack::Move_Key(char name, const Hand &my_hand, int dealer_card){
 
     // my_soft
     ans = ans << 1;
-    if(name != 'S' && my_hand.Soft){ // if it's a stand it is the same as a hard
+    if(name != 'S' && my_hand.Ace){ // if it's a stand it is the same as a hard
         ans |= 0x1;
     }
 
@@ -59,6 +60,24 @@ void Blackjack::closeDatabase() {
         db = nullptr;
     }
 }
+
+void Blackjack::createEVTable() {
+    const char* createTableSQL = 
+        "CREATE TABLE IF NOT EXISTS EVTable ("
+        "move_key INTEGER, "
+        "pool_key INTEGER, "
+        "EV REAL, "
+        "PRIMARY KEY (move_key, pool_key)"
+        ");";
+    
+    char* errorMessage = 0;
+    int rc = sqlite3_exec(db, createTableSQL, 0, 0, &errorMessage);
+    if (rc != SQLITE_OK) {
+        std::cerr << "Error creating table: " << errorMessage << std::endl;
+        sqlite3_free(errorMessage);
+    }
+}
+
 
 bool Blackjack::getEVIfExists(short move_key, uint64_t pool_key, double& ev) {
     const char* selectSQL = "SELECT EV FROM EVTable WHERE move_key = ? AND pool_key = ?;";
@@ -175,11 +194,11 @@ double Blackjack::Stand_EV(const Absent_Map &pool, const Hand &current, int deal
     }
 
     // check hashed
-    //short move_key = Move_Key('S', current, dealer_card);
-    //uint64_t pool_key = pool.Map_Key();
-    //if(getEVIfExists(move_key, pool_key, ans)){
-    //    return ans;
-    //}
+    short move_key = Move_Key('S', current, dealer_card);
+    uint64_t pool_key = pool.Map_Key();
+    if(getEVIfExists(move_key, pool_key, ans)){
+        return ans;
+    }
 
     Hand D_Hand;
     D_Hand.Add(dealer_card);
@@ -190,7 +209,7 @@ double Blackjack::Stand_EV(const Absent_Map &pool, const Hand &current, int deal
     Stand_Rec(pool, current.High_Total(), D_Hand, 1.0, ans);
 
     // hash
-    //insertEV(move_key, pool_key, ans);
+    insertEV(move_key, pool_key, ans);
     return ans;
 }
 
@@ -233,11 +252,11 @@ double Blackjack::Hit_EV(const Absent_Map &pool, const Hand &current, int dealer
     int card_dups;
 
     // check hashed
-    //short move_key = Move_Key('H', current, dealer_card);
-    //uint64_t pool_key = pool.Map_Key();
-    //if(getEVIfExists(move_key, pool_key, ans)){
-    //    return ans;
-    //}
+    short move_key = Move_Key('H', current, dealer_card);
+    uint64_t pool_key = pool.Map_Key();
+    if(getEVIfExists(move_key, pool_key, ans)){
+        return ans;
+    }
 
     for(int i = 1; i < 11; i++){
         card_dups = map.Count(i);
@@ -253,7 +272,7 @@ double Blackjack::Hit_EV(const Absent_Map &pool, const Hand &current, int dealer
     }
 
     // hash
-    //insertEV(move_key, pool_key, ans);
+    insertEV(move_key, pool_key, ans);
 
     return ans;
 }
@@ -266,11 +285,11 @@ double Blackjack::Double_EV(const Absent_Map &pool, const Hand &current, int dea
     int card_dups;
 
     // check hashed
-    //short move_key = Move_Key('D', current, dealer_card);
-    //uint64_t pool_key = pool.Map_Key();
-    //if(getEVIfExists(move_key, pool_key, ans)){
-    //    return ans;
-    //}
+    short move_key = Move_Key('D', current, dealer_card);
+    uint64_t pool_key = pool.Map_Key();
+    if(getEVIfExists(move_key, pool_key, ans)){
+        return ans;
+    }
 
     for(int i = 1; i < 11; i++){
         card_dups = map.Count(i);
@@ -286,7 +305,7 @@ double Blackjack::Double_EV(const Absent_Map &pool, const Hand &current, int dea
     }
 
     // hash
-    //insertEV(move_key, pool_key, ans * 2);
+    insertEV(move_key, pool_key, ans * 2);
 
     return ans * 2;
 }
@@ -296,7 +315,7 @@ double Blackjack::Split_EV(const Absent_Map &pool, const Hand &current, int deal
     Hand my_hand = current;
     my_hand.Remove_Last();
 
-    if(my_hand.Soft){ // only 1 card when splitting aces
+    if(my_hand.Ace){ // only 1 card when splitting aces
         return Double_EV(pool, my_hand, dealer_card);
     }
 

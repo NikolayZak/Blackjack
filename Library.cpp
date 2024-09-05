@@ -4,30 +4,19 @@
 void Hand::Add(int card){
     cards.push_back(card);
     if(card == 1){
-        Ace_count++;
-        if(total < 11){
-            total += 11;
-            Soft = true;
-        }else{
-            total++;
-        }
-    }else{
-        total+= card;
-    }
-
-    if(Soft && total > 21){
-        total -= 10;
-        Soft = false;
+        Ace = true;
     }
 }
 
-// technical debt
 int Hand::High_Total() const {
+    int total = 0;
+    for (int card : cards) {
+        total += card;
+    }
+    if(Ace && total < 12){
+        total += 10;
+    }
     return total;
-}
-
-bool Hand::Is_Soft() const {
-    return Soft;
 }
 
 bool Hand::Can_Split() const {
@@ -35,25 +24,19 @@ bool Hand::Can_Split() const {
 }
 
 void Hand::Clear(){
-    Ace_count = 0;
-    Soft = false;
+    Ace = false;
     cards.clear();
-    total = 0;
 }
 
 void Hand::Remove_Last(){
-    int last_card = cards.back();
-    if(last_card == 1){
-        Ace_count--;
-        if(Soft && Ace_count == 0){
-            total -= 11;
-            Soft = false;
-        }else{
-            total--;
+    cards.pop_back();
+    for(int i = 0; i < (int)cards.size(); i++){
+        if(cards[i] == 1){
+            Ace = true;
+            return;
         }
     }
-    total -= last_card;
-    cards.pop_back();
+    Ace = false;
 }
 
 // technical debt : MUST BE COMPUTED AFTER ADDING CARD
@@ -69,9 +52,7 @@ double Hand::Half_Permutation() const{
 }
 
 Hand::Hand(){
-    Ace_count = 0;
-    Soft = false;
-    total = 0;
+    Ace = false;
 }
 
 Hand::~Hand(){

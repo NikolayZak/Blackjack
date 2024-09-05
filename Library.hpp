@@ -5,13 +5,10 @@
 
 struct Hand {
     vector<int> cards; // technical debt : use a custom vector with purpose built methods
-    int total;
-    int Ace_count;
-    bool Soft;
+    bool Ace;
 
     void Add(int card);
     int High_Total() const;
-    bool Is_Soft() const;
     bool Can_Split() const;
     void Clear();
     void Remove_Last();

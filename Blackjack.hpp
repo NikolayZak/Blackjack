@@ -14,6 +14,7 @@ class Blackjack{
     sqlite3* db;
     bool openDatabase();
     void closeDatabase();
+    void createEVTable();
     // Blob Layout: name 0-1 | soft 2 | my_hand_total 3-7 | pool 8-63
     short Move_Key(char name, const Hand &my_hand, int dealer_card);
 
