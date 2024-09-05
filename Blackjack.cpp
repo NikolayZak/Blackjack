@@ -11,27 +11,21 @@ Blackjack::~Blackjack(){
     closeDatabase();
 }
 
-// Blob Layout: dealer_hand_total 0-4 | my_hand_total 5-9 | my_soft 10 | name 11-13
+// Blob Layout: dealer_hand_total 0-4 | my_hand_total 5-9 | my_soft 10 | name 11-12
 short Blackjack::Move_Key(char name, const Hand &my_hand, int dealer_card){
     short ans = 0;
 
-    // name
+    //Split is hashed via double and hit methods
     switch(name){
-    case 'H':
+    case 'S':
         ans |= 0x0;
         break;
-    case 'S':
+    case 'H':
         ans |= 0x1;
         break;
     case 'D':
         ans |= 0x2;
         break;
-    case 'P':
-        ans |= 0x3;
-        break;
-    case 'B':
-        ans |= 0x4;
-
     default:
         std::cerr << "Name not recognized " << std::endl;
         break;
@@ -174,23 +168,27 @@ double Blackjack::Dealer_Ace_Exception(Absent_Map pool, int my_total, Hand deale
 // returns the expected value of a stand in this position
 // technical debt : Add hashing
 double Blackjack::Stand_EV(const Absent_Map &pool, const Hand &current, int dealer_card){
-
-    
-
-
-
-
     double ans = -1.0;
+
     if(current.High_Total() > 21){
         return ans;
     }
+
+    // check hashed
+    if(getEVIfExists(Move_Key('S', current, dealer_card), pool.Map_Key(), ans)){
+        return ans;
+    }
+
     Hand D_Hand;
     D_Hand.Add(dealer_card);
-
+    // dealer exception
     if(dealer_card == 1){
         return Dealer_Ace_Exception(pool, current.High_Total(), D_Hand);
     }
     Stand_Rec(pool, current.High_Total(), D_Hand, 1.0, ans);
+
+    // hash
+    insertEV(Move_Key('S', current, dealer_card), pool.Map_Key(), ans);
     return ans;
 }
 
@@ -231,6 +229,12 @@ double Blackjack::Hit_EV(const Absent_Map &pool, const Hand &current, int dealer
     double ans = 0.0;
     double card_prob;
     int card_dups;
+
+    // check hashed
+    if(getEVIfExists(Move_Key('H', current, dealer_card), pool.Map_Key(), ans)){
+        return ans;
+    }
+
     for(int i = 1; i < 11; i++){
         card_dups = map.Count(i);
         if(card_dups == 0){
@@ -243,6 +247,10 @@ double Blackjack::Hit_EV(const Absent_Map &pool, const Hand &current, int dealer
         my_hand.Remove_Last();
         map.Remove(i);
     }
+
+    // hash
+    insertEV(Move_Key('H', current, dealer_card), pool.Map_Key(), ans);
+
     return ans;
 }
 
@@ -252,6 +260,12 @@ double Blackjack::Double_EV(const Absent_Map &pool, const Hand &current, int dea
     double ans = 0.0;
     double card_prob;
     int card_dups;
+
+    // check hashed
+    if(getEVIfExists(Move_Key('D', current, dealer_card), pool.Map_Key(), ans)){
+        return ans;
+    }
+
     for(int i = 1; i < 11; i++){
         card_dups = map.Count(i);
         if(card_dups == 0){
@@ -264,6 +278,10 @@ double Blackjack::Double_EV(const Absent_Map &pool, const Hand &current, int dea
         my_hand.Remove_Last();
         map.Remove(i);
     }
+
+    // hash
+    insertEV(Move_Key('D', current, dealer_card), pool.Map_Key(), ans * 2);
+
     return ans * 2;
 }
 
