@@ -11,7 +11,7 @@ Blackjack::~Blackjack(){
     closeDatabase();
 }
 
-// Blob Layout: dealer_hand_total 0-4 | my_hand_total 5-9 | my_soft 10 | name 11-12
+// Blob Layout: dealer_hand_total 0-4 | my_hand_total 5-9 | my_soft 10 | name 11-13
 short Blackjack::Move_Key(char name, const Hand &my_hand, int dealer_card){
     short ans = 0;
 
@@ -29,7 +29,11 @@ short Blackjack::Move_Key(char name, const Hand &my_hand, int dealer_card){
     case 'P':
         ans |= 0x3;
         break;
+    case 'B':
+        ans |= 0x4;
+
     default:
+        std::cerr << "Name not recognized " << std::endl;
         break;
     }
 
@@ -145,6 +149,7 @@ void Blackjack::Stand_Rec(Absent_Map pool, int my_total, Hand dealer_hand, doubl
     }
 }
 
+// todo: make this call Stand_EV not Stand_Rec
 double Blackjack::Dealer_Ace_Exception(Absent_Map pool, int my_total, Hand dealer_hand){
     int card_dups;
     double multy;
@@ -169,6 +174,11 @@ double Blackjack::Dealer_Ace_Exception(Absent_Map pool, int my_total, Hand deale
 // returns the expected value of a stand in this position
 // technical debt : Add hashing
 double Blackjack::Stand_EV(const Absent_Map &pool, const Hand &current, int dealer_card){
+
+    
+
+
+
 
     double ans = -1.0;
     if(current.High_Total() > 21){
