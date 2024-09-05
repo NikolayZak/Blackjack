@@ -4,7 +4,7 @@
 #include "Card_Shoe.hpp"
 
 struct Hand {
-    vector<int> cards;
+    vector<int> cards; // technical debt : use a custom vector with purpose built methods
     bool Ace;
 
     void Add(int card);
@@ -12,6 +12,7 @@ struct Hand {
     bool Can_Split() const;
     void Clear();
     void Remove_Last();
+    double Half_Permutation() const;
     Hand();
     ~Hand();
 };
@@ -50,34 +51,9 @@ class Dealer{
 };
 
 struct Move{
-    double stand_EV;
-    double hit_EV;
-    double double_EV;
-    double split_EV;
-    char best;
-};
-
-struct Simulation_Results{
-    double time;
-    int rounds_played;
-    int player_balance;
-    int player_pushes;
-    int player_wins;
-    int player_losses;
-    int player_splits;
-    int player_doubles;
-    int player_blackjack;
-    int bet_size;
-    Simulation_Results();
+    double EV;
+    char name;
     void Print();
-};
-
-struct EV_Results{
-    double win_P;
-    double loss_P;
-    double push_P;
-    double prob_hand;
-    EV_Results();
 };
 
 struct Hashed_Query{
@@ -85,5 +61,6 @@ struct Hashed_Query{
     int total;
     Hashed_Query(const Absent_Map &map, int high_total);
 };
+
 
 #endif

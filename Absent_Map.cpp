@@ -1,6 +1,9 @@
 #include "Absent_Map.hpp"
 
 Absent_Map::Absent_Map(int number_of_decks){
+    if(number_of_decks > 8){
+        std::cout << "COMPRESSION WILL FAIL" << std::endl;
+    }
     decks = number_of_decks;
     cards = number_of_decks * 52;
     duplicates = number_of_decks * 4;
@@ -41,7 +44,8 @@ void Absent_Map::Clear(){
     remaining_cards[9] = duplicates * 4; // 10's
 }
 
-double Absent_Map::Probability(int Theta){
+// MUST BE COMPUTED BEFORE ADDING TO POOL
+double Absent_Map::Probability(int Theta) const{
     return (double)remaining_cards[Theta - 1]/(double)cards;
 }
 
@@ -49,11 +53,21 @@ int Absent_Map::Count(int Theta) const {
     return remaining_cards[Theta - 1];
 }
 
-int Absent_Map::Cards_Left(){
+int Absent_Map::Cards_Left() const{
     return cards;
 }
 
-bool Absent_Map::operator==(const Absent_Map &other){
+// Returns the pool compressed into 62 bits (0-61)
+uint64_t Absent_Map::Map_Key() const{
+    uint64_t ans = 0;
+    for(int i = 0; i < 9; i++){
+        ans |= uint64_t(remaining_cards[i] & 0x3F) << (i * 6);
+    }
+    ans |= uint64_t(remaining_cards[9] & 0xFF) << 54;
+    return ans;
+}
+
+bool Absent_Map::operator==(const Absent_Map &other) const{
     if(cards == other.cards){
         for(int i = 0; i < 10; i++){
             if(remaining_cards[i] != other.remaining_cards[i]){

@@ -1,315 +1,364 @@
 #include "Blackjack.hpp"
 
+// ************************************************   DATABASE METHODS   ****************************************************************
 Blackjack::Blackjack(){
-    split = false;
+    if (!openDatabase()) {
+        std::cerr << "Failed to open database." << std::endl;
+    }
+    createEVTable();
 }
 
 Blackjack::~Blackjack(){
-    for(int i = 0; i < 10; i++){
-        for(int j = 0; j < 2; j++){
-            Hashed_hands[i][j].clear();
-            Hashed_ans[i][j].clear();
-        }
+    closeDatabase();
+}
+
+// Blob Layout: dealer_hand_total 0-4 | my_hand_total 5-9 | my_soft 10 | name 11-12
+short Blackjack::Move_Key(char name, const Hand &my_hand, int dealer_card){
+    short ans = 0;
+
+    //Split is hashed via double and hit methods
+    switch(name){
+    case 'S':
+        ans |= 0x0;
+        break;
+    case 'H':
+        ans |= 0x1;
+        break;
+    case 'D':
+        ans |= 0x2;
+        break;
+    default:
+        std::cerr << "Name not recognized " << std::endl;
+        break;
+    }
+
+    // my_soft
+    ans = ans << 1;
+    if(name != 'S' && my_hand.Ace){ // if it's a stand it is the same as a hard
+        ans |= 0x1;
+    }
+
+    // my_hand_total
+    ans = ans << 5;
+    ans |= short(my_hand.High_Total() & 0x1F);
+
+    // dealer_card
+    ans = ans << 5;
+    ans |= short(dealer_card & 0x1F);
+
+    return ans;
+}
+
+bool Blackjack::openDatabase() {
+    int rc = sqlite3_open(DATABASE, &db);
+    return rc == SQLITE_OK;
+}
+
+void Blackjack::closeDatabase() {
+    if (db) {
+        sqlite3_close(db);
+        db = nullptr;
     }
 }
 
-double Blackjack::Risk_Of_Ruin(double winRate, double lossRate, double averageWin, double averageLoss, double maxRiskPercent, double tradingCapital) {
-    double riskOfRuin = pow(lossRate / winRate, tradingCapital / (averageLoss * maxRiskPercent));
-    return riskOfRuin;
+void Blackjack::createEVTable() {
+    const char* createTableSQL = 
+        "CREATE TABLE IF NOT EXISTS EVTable ("
+        "move_key INTEGER, "
+        "pool_key INTEGER, "
+        "EV REAL, "
+        "PRIMARY KEY (move_key, pool_key)"
+        ");";
+    
+    char* errorMessage = 0;
+    int rc = sqlite3_exec(db, createTableSQL, 0, 0, &errorMessage);
+    if (rc != SQLITE_OK) {
+        std::cerr << "Error creating table: " << errorMessage << std::endl;
+        sqlite3_free(errorMessage);
+    }
 }
 
-// ***********************************************************************   BEST MOVE   **************************************************************************
 
-void Blackjack::Stand_Rec(Absent_Map a_map, int my_total, Hand dealer_hand, EV_Results &tally){
-    // base case: Dealer has 17 or more
+bool Blackjack::getEVIfExists(short move_key, uint64_t pool_key, double& ev) {
+    const char* selectSQL = "SELECT EV FROM EVTable WHERE move_key = ? AND pool_key = ?;";
+    sqlite3_stmt* stmt;
+    int rc = sqlite3_prepare_v2(db, selectSQL, -1, &stmt, 0);
+    if (rc == SQLITE_OK) {
+        // Bind the 16-bit move_key
+        sqlite3_bind_int(stmt, 1, move_key);
+        // Bind the 64-bit pool_key
+        sqlite3_bind_int64(stmt, 2, pool_key);
+
+        rc = sqlite3_step(stmt);
+        if (rc == SQLITE_ROW) {
+            ev = sqlite3_column_double(stmt, 0);  // Retrieve the EV value
+            sqlite3_finalize(stmt);
+            return true;  // Key exists
+        }
+    }
+    sqlite3_finalize(stmt);
+    return false;  // Key does not exist
+}
+
+void Blackjack::insertEV(short move_key, uint64_t pool_key, double ev) {
+    const char* insertSQL = "INSERT INTO EVTable (move_key, pool_key, EV) VALUES (?, ?, ?);";
+    sqlite3_stmt* stmt;
+    int rc = sqlite3_prepare_v2(db, insertSQL, -1, &stmt, 0);
+    if (rc == SQLITE_OK) {
+        // Bind the 16-bit move_key
+        sqlite3_bind_int(stmt, 1, move_key);
+        // Bind the 64-bit pool_key
+        sqlite3_bind_int64(stmt, 2, pool_key);
+        // Bind the EV value
+        sqlite3_bind_double(stmt, 3, ev);
+
+        rc = sqlite3_step(stmt);
+        if (rc != SQLITE_DONE) {
+            std::cerr << "Failed to insert data: " << sqlite3_errmsg(db) << std::endl;
+        }
+        sqlite3_finalize(stmt);
+    } else {
+        std::cerr << "Failed to prepare statement: " << sqlite3_errmsg(db) << std::endl;
+    }
+}
+
+// ****************************************************************************************************************************
+
+double Blackjack::BJ_EV(Absent_Map &pool){
+    return pool.Probability(10) * pool.Probability(1) * 5; // blackjack pays 2.5, there are 2 ways to draw 2 cards
+}
+
+// technical debt : reduce permutation counting : theoretically speed up = 10x
+void Blackjack::Stand_Rec(Absent_Map pool, int my_total, Hand dealer_hand, double multiplier, double &EV){
+    // assuming the player_total is less then 22
+    // base case: Dealer has 17 or more: check for a player win
     int dealer_total = dealer_hand.High_Total();
     if(dealer_total > 16){                                // Dealer has a hand
         if(dealer_total > 21 || dealer_total < my_total){ // Dealer Lose: Bust || Dealer Short
-            tally.win_P += tally.prob_hand;
-        }else if(dealer_total > my_total){                // Dealer Win
-            tally.loss_P += tally.prob_hand;
-        }else{                                            // Push
-            tally.push_P += tally.prob_hand;
+            EV += multiplier * 2.0; // wins pay 2 times
+        }else if(dealer_total == my_total){
+            EV += multiplier; // push
         }
+        // loss is assumed in EV = -1
         return;
     } // implied else (Dealer needs to pickup)
 
     int card_dups;
-    double original_prob = tally.prob_hand;
+    double original_prob = multiplier; // save state
     for(int i = 1; i < 11; i++){ // go through the map
-        card_dups = a_map.Count(i);
+        card_dups = pool.Count(i);
         if(card_dups == 0){
             continue; // no copies
         }
         
         // iterate 1 hand
-        tally.prob_hand *= a_map.Probability(i);
+        multiplier *= pool.Probability(i);
         dealer_hand.Add(i);
-        a_map.Add(i);
-        Stand_Rec(a_map, my_total, dealer_hand, tally);
+        pool.Add(i);
+        Stand_Rec(pool, my_total, dealer_hand, multiplier, EV);
         dealer_hand.Remove_Last();
-        a_map.Remove(i);
-        tally.prob_hand = original_prob;
+        pool.Remove(i);
+        multiplier = original_prob;
     }
 }
 
-double Blackjack::Stand_EV(Absent_Map a_map, Hand my_hand, int dealer_card){
-    EV_Results ans;
-    Hand dealer_hand;
-    dealer_hand.Add(dealer_card);
-    int my_total = my_hand.High_Total();
-    Stand_Rec(a_map, my_total, dealer_hand, ans);
-    double WR = ans.win_P / (ans.loss_P + ans.win_P + ans.push_P);
-    double EV = (WR * 2) - 1;  //(payout)
-    return EV;
-}
-
-double Blackjack::Hit_EV(Absent_Map a_map, Hand my_hand, int dealer_card){
-    EV_Results ans;
-    Hand dealer_hand;
-    dealer_hand.Add(dealer_card);
+// todo: make this call Stand_EV not Stand_Rec
+double Blackjack::Dealer_Ace_Exception(Absent_Map pool, int my_total, Hand dealer_hand){
     int card_dups;
-    int my_total = my_hand.High_Total();
-
-    for(int i = 1; i < 11; i++){ // iterate each possible hit
-        card_dups = a_map.Count(i);
+    double multy;
+    double ans = -1.0;
+    for(int i = 1; i < 10; i++){ // go through the map except 10
+        card_dups = pool.Count(i);
         if(card_dups == 0){
             continue; // no copies
         }
-        ans.prob_hand *= a_map.Probability(i);
-        my_hand.Add(i);
-        a_map.Add(i);
-        my_total = my_hand.High_Total();
-        if(my_total > 21){ // check for bust
-            ans.loss_P += ans.prob_hand;
-        }else{
-            Stand_Rec(a_map, my_total, dealer_hand, ans);
-        }
-        my_hand.Remove_Last();
-        a_map.Remove(i);
-        ans.prob_hand = 1; // reset the probability
+        
+        // iterate 1 hand
+        multy = (double)pool.Count(i) / (double)(pool.Cards_Left() - pool.Count(10));
+        dealer_hand.Add(i);
+        pool.Add(i);
+        Stand_Rec(pool, my_total, dealer_hand, multy, ans);
+        dealer_hand.Remove_Last();
+        pool.Remove(i);
     }
-    double WR = ans.win_P / (ans.loss_P + ans.win_P + ans.push_P);
-    double EV = (WR * 2) - 1;  //(payout)
-    return EV;
+    return ans;
 }
 
-void Blackjack::Split_Rec(Absent_Map a_map, Hand my_hand, int dealer_card, double Multiplier, double &Expected_Value){
-    double Hit_EV_ = Hit_EV(a_map, my_hand, dealer_card);
-    double Stand_EV_ = Stand_EV(a_map, my_hand, dealer_card);
+// returns the expected value of a stand in this position
+// technical debt : Add hashing
+double Blackjack::Stand_EV(const Absent_Map &pool, const Hand &current, int dealer_card){
+    double ans = -1.0;
 
-    // base case: Hit_EV < Stand_EV
-    if(Hit_EV_ < Stand_EV_){
-        Expected_Value += Stand_EV_ * Multiplier;
-        return;
+    if(current.High_Total() > 21){
+        return ans;
     }
 
-    // case recursion
+    // check hashed
+    short move_key = Move_Key('S', current, dealer_card);
+    uint64_t pool_key = pool.Map_Key();
+    if(getEVIfExists(move_key, pool_key, ans)){
+        return ans;
+    }
+
+    Hand D_Hand;
+    D_Hand.Add(dealer_card);
+    // dealer exception
+    if(dealer_card == 1){
+        return Dealer_Ace_Exception(pool, current.High_Total(), D_Hand);
+    }
+    Stand_Rec(pool, current.High_Total(), D_Hand, 1.0, ans);
+
+    // hash
+    insertEV(move_key, pool_key, ans);
+    return ans;
+}
+
+double Blackjack::Hit_Rec(Absent_Map pool, Hand my_hand, int dealer_card, double multiplier){
+    // base case my_hand > 21
+    if(my_hand.High_Total() > 21){
+        return -1.0;
+    }
+
+    // compute Stand EV and Hit EV
+    double hit_ev = 0.0;
+    double stand_ev = Stand_EV(pool, my_hand, dealer_card) * multiplier;
+    double original_prob = multiplier; // save state
     int card_dups;
-    int my_total;
-    double old_multy = Multiplier;
     for(int i = 1; i < 11; i++){
-        card_dups = a_map.Count(i);
+        card_dups = pool.Count(i);
         if(card_dups == 0){
             continue; // no copies
         }
-        Multiplier *= a_map.Probability(i);
+        multiplier *= pool.Probability(i);
         my_hand.Add(i);
-        a_map.Add(i);
-        my_total = my_hand.High_Total();
-        if(my_total < 22){ // check it's not busted
-            Split_Rec(a_map, my_hand, dealer_card, Multiplier, Expected_Value);
-        }
+        pool.Add(i);
+        hit_ev += Hit_Rec(pool, my_hand, dealer_card, multiplier) * multiplier;
         my_hand.Remove_Last();
-        a_map.Remove(i);
-        Multiplier = old_multy;
+        pool.Remove(i);
+        multiplier = original_prob;
     }
+
+    if(stand_ev > hit_ev){
+        return stand_ev;
+    }
+    return hit_ev;
 }
 
-double Blackjack::Split_EV(Absent_Map a_map, Hand my_hand, int dealer_card){
-    double ans;
-    my_hand.Remove_Last();
-    double multiplier = 1;
-    Split_Rec(a_map, my_hand, dealer_card, multiplier, ans);
+double Blackjack::Hit_EV(const Absent_Map &pool, const Hand &current, int dealer_card){
+    Absent_Map map = pool;
+    Hand my_hand = current;
+    double ans = 0.0;
+    double card_prob;
+    int card_dups;
+
+    // check hashed
+    short move_key = Move_Key('H', current, dealer_card);
+    uint64_t pool_key = pool.Map_Key();
+    if(getEVIfExists(move_key, pool_key, ans)){
+        return ans;
+    }
+
+    for(int i = 1; i < 11; i++){
+        card_dups = map.Count(i);
+        if(card_dups == 0){
+            continue; // no copies
+        }
+        card_prob = map.Probability(i);
+        my_hand.Add(i);
+        map.Add(i);
+        ans += Hit_Rec(map, my_hand, dealer_card, 1.0) * card_prob;
+        my_hand.Remove_Last();
+        map.Remove(i);
+    }
+
+    // hash
+    insertEV(move_key, pool_key, ans);
+
+    return ans;
+}
+
+double Blackjack::Double_EV(const Absent_Map &pool, const Hand &current, int dealer_card){
+    Absent_Map map = pool;
+    Hand my_hand = current;
+    double ans = 0.0;
+    double card_prob;
+    int card_dups;
+
+    // check hashed
+    short move_key = Move_Key('D', current, dealer_card);
+    uint64_t pool_key = pool.Map_Key();
+    if(getEVIfExists(move_key, pool_key, ans)){
+        return ans;
+    }
+
+    for(int i = 1; i < 11; i++){
+        card_dups = map.Count(i);
+        if(card_dups == 0){
+            continue; // no copies
+        }
+        card_prob = map.Probability(i);
+        my_hand.Add(i);
+        map.Add(i);
+        ans += Stand_EV(map, my_hand, dealer_card) * card_prob;
+        my_hand.Remove_Last();
+        map.Remove(i);
+    }
+
+    // hash
+    insertEV(move_key, pool_key, ans * 2);
+
     return ans * 2;
 }
 
-Move Blackjack::Best_Move(const Absent_Map &a_map, const Hand &my_hand, const int &dealer_card){
-    // check hashed
-    for(int i = 0; i < (int)Hashed_hands[dealer_card - 1][my_hand.Ace].size(); i++){
-        if(Hashed_hands[dealer_card - 1][my_hand.Ace][i].total == my_hand.High_Total()){
-            if(Hashed_hands[dealer_card - 1][my_hand.Ace][i].map == a_map){
-                return Hashed_ans[dealer_card - 1][my_hand.Ace][i];
-            }
-        }
-    }
-    
+// assuming the hand can be split
+double Blackjack::Split_EV(const Absent_Map &pool, const Hand &current, int dealer_card){
+    Hand my_hand = current;
+    my_hand.Remove_Last();
 
-    Move ans;
-    ans.stand_EV = Stand_EV(a_map, my_hand, dealer_card);
-    ans.hit_EV = Hit_EV(a_map, my_hand, dealer_card);
-    ans.double_EV = ans.hit_EV * 2;
-    if(my_hand.Can_Split() && !split){
-        ans.split_EV = Split_EV(a_map, my_hand, dealer_card);
-    }else{
-        ans.split_EV = -10;
+    if(my_hand.Ace){ // only 1 card when splitting aces
+        return Double_EV(pool, my_hand, dealer_card);
     }
 
-    double largest = ans.stand_EV;
-    ans.best = 's';  // Start by assuming 's' is the largest
+    return Hit_EV(pool, my_hand, dealer_card) * 2;
+}
 
-    if (ans.hit_EV + 0.00000001 >= largest) { // add this number so hit is actually larger than stand on low numbers
-        largest = ans.hit_EV;
-        ans.best = 'h';
-    }
-    // check to see if a split has occured
-    if(split){
-        return ans;
-    }
-    if (ans.double_EV > largest) {
-        largest = ans.double_EV;
-        ans.best = 'd';
-    }
-    if (ans.split_EV > largest) {
-        ans.best = 'p';
-    }
+void Blackjack::Print_Stats(const Absent_Map &pool, const Hand &current, int dealer_card){
+    double S = Stand_EV(pool, current, dealer_card);
+    double H = Hit_EV(pool, current, dealer_card);
+    double D = Double_EV(pool, current, dealer_card);
+    cout << "Stand EV: " << S << endl;
+    cout << "Hit EV: " << H << endl;
+    cout << "Double EV: " << D << endl;
 
-    // Hash answer
-    Hashed_Query new_hash(a_map, my_hand.High_Total());
-    Hashed_hands[dealer_card - 1][my_hand.Ace].push_back(new_hash);
-    Hashed_ans[dealer_card - 1][my_hand.Ace].push_back(ans);
+    if(current.Can_Split()){
+        double P = Split_EV(pool, current, dealer_card);
+        cout << "Split EV: " << P << endl;
+    }
+}
 
+Move Blackjack::Best_Move(const Absent_Map &pool, const Hand &current, int dealer_card){
+    Move ans;   // compute values
+    double S = Stand_EV(pool, current, dealer_card);
+    double H = Hit_EV(pool, current, dealer_card);
+    double D = Double_EV(pool, current, dealer_card);
+    double P = -10.0;
+    if(current.Can_Split()){
+        P = Split_EV(pool, current, dealer_card);
+    }
+    // find max
+    ans.EV = S;
+    ans.name = 'S';
+    if(H > ans.EV){
+        ans.EV = H;
+        ans.name = 'H';
+    }
+    if(D > ans.EV){
+        ans.EV = D;
+        ans.name = 'D';
+    }
+    if(P > ans.EV){
+        ans.EV = P;
+        ans.name = 'P';
+    }
     return ans;
-}
-
-void Blackjack::Play(Card_Shoe sim_shoe, Absent_Map sim_map, Simulation_Results &tally, int Bet_Amount){
-    Dealer Tom;
-    Player Stephen(0);
-    tally.rounds_played++;
-    Stephen.Deal_In(sim_shoe, Bet_Amount);
-    Tom.Deal_In(sim_shoe);
-    sim_map.Add(Stephen.hands[0].cards[0]);
-    sim_map.Add(Stephen.hands[0].cards[1]);
-    sim_map.Add(Tom.Dealer_Card());
-    Move choice = Best_Move(sim_map, Stephen.hands[0], Tom.Dealer_Card());
-    while(choice.best != 's'){
-        if(choice.best == 'd'){ // Double
-            Stephen.Double(sim_shoe);
-            tally.player_doubles++;
-            choice.best = 's'; // end turn
-        }else if(choice.best == 'h'){ // Hit
-            Stephen.Hit(sim_shoe, 0);
-            sim_map.Add(Stephen.hands[0].cards.back());
-            if(Stephen.hands[0].High_Total() > 21){
-                choice.best = 's'; // bust -> end turn
-            }else{ // keep going
-                choice = Best_Move(sim_map, Stephen.hands[0], Tom.Dealer_Card());
-            }
-        }else if(choice.best == 'p'){ // split
-            split = true;
-            tally.player_splits++;
-            Stephen.Split(sim_shoe);
-            sim_map.Add(Stephen.hands[0].cards.back());
-            sim_map.Add(Stephen.hands[1].cards.back());
-            choice = Best_Move(sim_map, Stephen.hands[0], Tom.Dealer_Card()); // keep going on the first hand
-        }
-    }
-
-    // case split
-    if(split){
-        choice = Best_Move(sim_map, Stephen.hands[1], Tom.Dealer_Card());
-        while(choice.best != 's'){
-            // Implied Hit
-            Stephen.Hit(sim_shoe, 1);
-            sim_map.Add(Stephen.hands[1].cards.back());
-            if(Stephen.hands[1].High_Total() > 21){
-                choice.best = 's'; // end turn
-            }else{
-                choice = Best_Move(sim_map, Stephen.hands[1], Tom.Dealer_Card());
-            }
-        }
-    }
-
-    // blackjack not counted as a win
-    if(Stephen.blackjack){
-        tally.player_blackjack++;
-        Stephen.Win();
-        tally.player_balance += Stephen.credit;
-        return;
-    }
-
-    // Evaluate
-    Tom.Call(sim_shoe);
-    int D_total = Tom.Total();
-    int S_total = Stephen.hands[0].High_Total();
-
-        // Player Bust
-    if(S_total > 21){
-        Stephen.Lose();
-        tally.player_losses++;
-        // Dealer Bust
-    }else if(D_total > 21){
-        Stephen.Win();
-        tally.player_wins++;
-        // Dealer Win
-    }else if(D_total > S_total){
-        Stephen.Lose();
-        tally.player_losses++;
-        // Player Win
-    }else if(S_total > D_total){
-        Stephen.Win();
-        tally.player_wins++;
-        // Push
-    }else{
-        tally.player_pushes++;
-    }
-
-    // split evaluation
-    if(split){
-        S_total = Stephen.hands[1].High_Total();
-            if(S_total > 21){
-            Stephen.Lose();
-            tally.player_losses++;
-            // Dealer Bust
-        }else if(D_total > 21){
-            Stephen.Win();
-            tally.player_wins++;
-            // Dealer Win
-        }else if(D_total > S_total){
-            Stephen.Lose();
-            tally.player_losses++;
-            // Player Win
-        }else if(S_total < D_total){
-            Stephen.Win();
-            tally.player_wins++;
-            // Push
-        }else{
-            tally.player_pushes++;
-        }
-    }
-    tally.player_balance += Stephen.credit;
-    split = false;
-}
-
-Simulation_Results Blackjack::Simulate(int num_decks, Absent_Map Card_Count, int n, int Bet_Amount){
-    auto start = chrono::high_resolution_clock::now();
-    Simulation_Results ans;
-    ans.bet_size = Bet_Amount;
-    Card_Shoe Shoe(num_decks);
-    for(int i = 0; i < n; i++){
-        Shoe.New_Shoe(Card_Count);
-        Play(Shoe, Card_Count, ans, Bet_Amount);
-    }
-    auto end = chrono::high_resolution_clock::now();
-    chrono::duration<double> duration = end - start;
-    ans.time = duration.count();
-    return ans;
-}
-
-
-double Blackjack::Pre_Win_Chance(int num_decks, Absent_Map Card_Count, int n){
-    Simulation_Results ans = Simulate(num_decks, Card_Count, n, 10);
-    double total_games = ans.player_blackjack + ans.player_wins + ans.player_losses; // pushes don't count LOL
-    double Win_Chance = (((double)ans.player_wins / total_games) * 2 + ((double)ans.player_blackjack / total_games) * 2.5);
-    return Win_Chance;
 }
