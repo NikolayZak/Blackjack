@@ -59,11 +59,17 @@ int Absent_Map::Cards_Left() const{
 
 // Returns the pool compressed into 62 bits (0-61)
 uint64_t Absent_Map::Map_Key() const{
+    // I'm scaling to a pool of 4 decks
+    // todo this I get the double current decks in the pool then scale it to 4 decks
+    //double scale_factor = ((double)cards / 52.0) / 4.0;
+    double scale_factor = 208.0 / (double)cards; // scales to 4 decks
+    // upper bound is 2x since you can deal out half of the decks before shuffeling
+    // CANNOT SCALE IF YOU DEAL MORE THAN 3/4 OF THE DECKS!!!
     uint64_t ans = 0;
     for(int i = 0; i < 9; i++){
-        ans |= uint64_t(remaining_cards[i] & 0x3F) << (i * 6);
+        ans |= uint64_t((int)round(remaining_cards[i] * scale_factor) & 0x3F) << (i * 6);
     }
-    ans |= uint64_t(remaining_cards[9] & 0xFF) << 54;
+    ans |= uint64_t((int)round(remaining_cards[9] * scale_factor) & 0xFF) << 54;
     return ans;
 }
 
