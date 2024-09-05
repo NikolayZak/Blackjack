@@ -57,13 +57,13 @@ int Absent_Map::Cards_Left() const{
     return cards;
 }
 
-// Assuming each element from 0-8 in the map is BETWEEN 0-63 (6 bits) and the last element 9 is between 0-255 (8 bits)
-uint64_t Absent_Map::Compressed_Map() const{
+// Returns the pool compressed into 62 bits (0-61)
+uint64_t Absent_Map::Map_Key() const{
     uint64_t ans = 0;
-    for(int i = 0; i < 8; i++){
+    for(int i = 0; i < 9; i++){
         ans |= uint64_t(remaining_cards[i] & 0x1F) << (i * 6);
     }
-    ans |= uint64_t(remaining_cards[8] & 0xFF) << 48;
+    ans |= uint64_t(remaining_cards[9] & 0xFF) << 54;
 }
 
 bool Absent_Map::operator==(const Absent_Map &other) const{

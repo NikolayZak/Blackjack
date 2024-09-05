@@ -23,7 +23,7 @@ class Absent_Map{
     double Probability(int Theta) const;
     int Count(int Theta) const;
     int Cards_Left() const;
-    uint64_t Compressed_Map() const;
+    uint64_t Map_Key() const;
     bool operator==(const Absent_Map &other) const;
     Absent_Map(int number_of_decks);
     Absent_Map(const Absent_Map &a_map);

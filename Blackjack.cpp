@@ -11,10 +11,11 @@ Blackjack::~Blackjack(){
     closeDatabase();
 }
 
-// Blob Layout: name 0-1 | pool 2-57 | my_hand_total 58-62 | soft 63
-unsigned char* BitBlob(char name, const Absent_Map &pool, const Hand &current, int dealer_card){
-    uint64_t ans = pool.Compressed_Map();
-    ans << 2;
+// Blob Layout: dealer_hand_total 0-4 | my_hand_total 5-9 | my_soft 10 | name 11-12
+short Blackjack::Move_Key(char name, const Hand &my_hand, int dealer_card){
+    short ans = 0;
+
+    // name
     switch(name){
     case 'H':
         ans |= 0x0;
@@ -31,6 +32,22 @@ unsigned char* BitBlob(char name, const Absent_Map &pool, const Hand &current, i
     default:
         break;
     }
+
+    // my_soft
+    ans << 1;
+    if(name != 'S' && my_hand.Soft){ // if it's a stand it is the same as a hard
+        ans |= 0x1;
+    }
+
+    // my_hand_total
+    ans << 5;
+    ans |= short(my_hand.High_Total() & 0x1F);
+
+    // dealer_card
+    ans << 5;
+    ans |= short(dealer_card & 0x1F);
+
+    return ans;
 }
 
 bool Blackjack::openDatabase() {
@@ -45,13 +62,16 @@ void Blackjack::closeDatabase() {
     }
 }
 
-bool Blackjack::getEVIfExists(uint64_t key, double& ev) {
-    const char* selectSQL = "SELECT EV FROM EVTable WHERE packed_key = ?;";
+bool Blackjack::getEVIfExists(short move_key, uint64_t pool_key, double& ev) {
+    const char* selectSQL = "SELECT EV FROM EVTable WHERE move_key = ? AND pool_key = ?;";
     sqlite3_stmt* stmt;
     int rc = sqlite3_prepare_v2(db, selectSQL, -1, &stmt, 0);
     if (rc == SQLITE_OK) {
-        // Bind the 64-bit key as an integer
-        sqlite3_bind_int64(stmt, 1, key);
+        // Bind the 16-bit move_key
+        sqlite3_bind_int(stmt, 1, move_key);
+        // Bind the 64-bit pool_key
+        sqlite3_bind_int64(stmt, 2, pool_key);
+
         rc = sqlite3_step(stmt);
         if (rc == SQLITE_ROW) {
             ev = sqlite3_column_double(stmt, 0);  // Retrieve the EV value
@@ -63,14 +83,18 @@ bool Blackjack::getEVIfExists(uint64_t key, double& ev) {
     return false;  // Key does not exist
 }
 
-void Blackjack::insertEV(uint64_t key, double ev) {
-    const char* insertSQL = "INSERT INTO EVTable (packed_key, EV) VALUES (?, ?);";
+void Blackjack::insertEV(short move_key, uint64_t pool_key, double ev) {
+    const char* insertSQL = "INSERT INTO EVTable (move_key, pool_key, EV) VALUES (?, ?, ?);";
     sqlite3_stmt* stmt;
     int rc = sqlite3_prepare_v2(db, insertSQL, -1, &stmt, 0);
     if (rc == SQLITE_OK) {
-        // Bind the 64-bit key as an integer
-        sqlite3_bind_int64(stmt, 1, key);
-        sqlite3_bind_double(stmt, 2, ev);  // Bind the EV value
+        // Bind the 16-bit move_key
+        sqlite3_bind_int(stmt, 1, move_key);
+        // Bind the 64-bit pool_key
+        sqlite3_bind_int64(stmt, 2, pool_key);
+        // Bind the EV value
+        sqlite3_bind_double(stmt, 3, ev);
+
         rc = sqlite3_step(stmt);
         if (rc != SQLITE_DONE) {
             std::cerr << "Failed to insert data: " << sqlite3_errmsg(db) << std::endl;

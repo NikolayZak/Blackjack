@@ -14,10 +14,12 @@ class Blackjack{
     sqlite3* db;
     bool openDatabase();
     void closeDatabase();
-    // Blob Layout: Pool 0-55 | name 56-57 | my_hand_total 58-62 | soft 63 | dealer card 64-67
-    uint64_t BitBlob(const Absent_Map &pool, const Hand &current, int dealer_card);
-    bool getEVIfExists(uint64_t blob, double& ev);
-    void insertEV(uint64_t blob, double ev);
+    // Blob Layout: name 0-1 | soft 2 | my_hand_total 3-7 | pool 8-63
+    short Move_Key(char name, const Hand &my_hand, int dealer_card);
+
+    // dealer_hand layout: total 0-6 | soft 7
+    bool getEVIfExists(short move_key, uint64_t pool_key, double& ev);
+    void insertEV(short move_key, uint64_t pool_key, double ev);
 
     void Stand_Rec(Absent_Map pool, int my_total, Hand dealer_hand, double multiplier, double &ans);
     double Hit_Rec(Absent_Map pool, Hand my_hand, int dealer_card, double multiplier);
