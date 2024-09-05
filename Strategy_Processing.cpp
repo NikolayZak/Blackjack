@@ -94,7 +94,6 @@
 */
 
 void Computed_Strategy_Chart::Configure(const Absent_Map &pool){
-    Blackjack BJ;
     Hand current;
     
     cout << "HARD\n";

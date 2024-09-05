@@ -46,6 +46,9 @@
 //     A,A    | P | P | P | P | P | P | P | P | P  | P |
 
 class Computed_Strategy_Chart{
+    private:
+    Blackjack BJ;
+
     public:
     // [Dealer_Card][Hard_Total]
     Move hard_chart[13][10];

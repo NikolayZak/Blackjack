@@ -61,9 +61,10 @@ int Absent_Map::Cards_Left() const{
 uint64_t Absent_Map::Map_Key() const{
     uint64_t ans = 0;
     for(int i = 0; i < 9; i++){
-        ans |= uint64_t(remaining_cards[i] & 0x1F) << (i * 6);
+        ans |= uint64_t(remaining_cards[i] & 0x3F) << (i * 6);
     }
     ans |= uint64_t(remaining_cards[9] & 0xFF) << 54;
+    return ans;
 }
 
 bool Absent_Map::operator==(const Absent_Map &other) const{

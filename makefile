@@ -1,6 +1,6 @@
 CXX = g++
 CXXFLAGS = -Wall -std=c++11 -O3
-LDFLAGS = -L"C/sqlite" -lsqlite3
+LDFLAGS = -lsqlite3
 
 TARGET = "BJ_Sim"
 
