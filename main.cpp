@@ -17,10 +17,10 @@ int main(){
       
 
       // For now: computing each chart of 1 card missing at a time
-      for(int i = 1; i < 2; i++){
+      for(int i = 1; i < 3; i++){
             auto start = chrono::system_clock::now();
 
-            test_map.Add(1);
+            test_map.Add(i);
 
             test_map.Print();
             Chart.Configure(test_map);
