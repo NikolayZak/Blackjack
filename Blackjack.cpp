@@ -34,7 +34,7 @@ short Blackjack::Move_Key(char name, const Hand &my_hand, int dealer_card){
 
     // my_soft
     ans = ans << 1;
-    if(name != 'S' && my_hand.Ace){ // if it's a stand it is the same as a hard
+    if(name != 'S' && my_hand.Ace()){ // if it's a stand it is the same as a hard
         ans |= 0x1;
     }
 
@@ -156,7 +156,7 @@ void Blackjack::Stand_Rec(Absent_Map pool, int my_total, Hand dealer_hand, doubl
         dealer_hand.Add(i);
         pool.Add(i);
         Stand_Rec(pool, my_total, dealer_hand, multiplier, EV);
-        dealer_hand.Remove_Last();
+        dealer_hand.Remove(i);
         pool.Remove(i);
         multiplier = original_prob;
     }
@@ -178,7 +178,7 @@ double Blackjack::Dealer_Ace_Exception(Absent_Map pool, int my_total, Hand deale
         dealer_hand.Add(i);
         pool.Add(i);
         Stand_Rec(pool, my_total, dealer_hand, multy, ans);
-        dealer_hand.Remove_Last();
+        dealer_hand.Remove(i);
         pool.Remove(i);
     }
     return ans;
@@ -234,7 +234,7 @@ double Blackjack::Hit_Rec(Absent_Map pool, Hand my_hand, int dealer_card, double
         my_hand.Add(i);
         pool.Add(i);
         hit_ev += Hit_Rec(pool, my_hand, dealer_card, multiplier) * multiplier;
-        my_hand.Remove_Last();
+        my_hand.Remove(i);
         pool.Remove(i);
         multiplier = original_prob;
     }
@@ -268,7 +268,7 @@ double Blackjack::Hit_EV(const Absent_Map &pool, const Hand &current, int dealer
         my_hand.Add(i);
         map.Add(i);
         ans += Hit_Rec(map, my_hand, dealer_card, 1.0) * card_prob;
-        my_hand.Remove_Last();
+        my_hand.Remove(i);
         map.Remove(i);
     }
 
@@ -301,7 +301,7 @@ double Blackjack::Double_EV(const Absent_Map &pool, const Hand &current, int dea
         my_hand.Add(i);
         map.Add(i);
         ans += Stand_EV(map, my_hand, dealer_card) * card_prob;
-        my_hand.Remove_Last();
+        my_hand.Remove(i);
         map.Remove(i);
     }
 
@@ -314,9 +314,9 @@ double Blackjack::Double_EV(const Absent_Map &pool, const Hand &current, int dea
 // assuming the hand can be split
 double Blackjack::Split_EV(const Absent_Map &pool, const Hand &current, int dealer_card){
     Hand my_hand = current;
-    my_hand.Remove_Last();
+    my_hand.Split();
 
-    if(my_hand.Ace){ // only 1 card when splitting aces
+    if(my_hand.Ace()){ // only 1 card when splitting aces
         return Double_EV(pool, my_hand, dealer_card);
     }
 

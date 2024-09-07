@@ -28,5 +28,5 @@ clean:
 	rm -f $(TARGET).exe *.o
 	rm -f *.o
 
-nuke database:
+nuke:
 	rm -f BlackjackDB.db
