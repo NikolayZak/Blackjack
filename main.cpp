@@ -16,9 +16,9 @@ int main(){
       Absent_Map test_map(4);
       Blackjack BJ;
       Hand test;
-      test.Add(10);
-      test.Add(10);
-      BJ.Hit_EV(test_map, test, 6);
+      test.Add(1);
+      test.Add(1);
+      BJ.Print_Stats(test_map, test, 1);
 
 
 
