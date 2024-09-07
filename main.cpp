@@ -3,39 +3,13 @@
 
 #define NUMBER_OF_DECKS 4
 
-void print(const vector<int> &stack){
-      cout << endl;
-      for(int i = 0; i < (int)stack.size(); i++){
-            cout << stack[i] << " ";
-      }
-      cout << endl;
-}
-
 int main(){
-      Computed_Strategy_Chart Chart;
-      Absent_Map test_map(4);
-      Blackjack BJ;
-      Hand test;
-      test.Add(1);
-      test.Add(1);
-      BJ.Print_Stats(test_map, test, 1);
-
-
-
-
-
-      /* deal out and compute every permutation of 1 card missing
-
-
-
-
-##############
       Absent_Map test_map(NUMBER_OF_DECKS);
       Computed_Strategy_Chart Chart;
       
 
       // For now: computing each chart of 1 card missing at a time
-      for(int i = 1; i < 11; i++){
+      for(int i = 1; i < 3; i++){
             auto start = chrono::system_clock::now();
 
             test_map.Add(i);
@@ -51,10 +25,12 @@ int main(){
             cout << "Time Elapsed: " << elapsed_seconds.count() / 60 << " minutes " << elapsed_seconds.count() % 60 << " seconds\n";
       }
 
-############
 
 
 
+
+
+      /* deal out and compute every permutation of 1 card missing
       int max_cards = 3;
       int next_card;
       bool loop = true;
