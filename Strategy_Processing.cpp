@@ -98,33 +98,32 @@ void Computed_Strategy_Chart::Configure(const Absent_Map &pool){
     
     // compute the hard totals
     for(int i = 5; i < 18; i++){ // for every hard total
+        current.Add(i);
         for(int j = 1; j < 11; j++){ // for every dealer card
-            current.Add(i);
             hard_chart[i-5][j-1] = BJ.Best_Move(pool, current, j);
-            current.Remove_Last();
         }
+        current.Remove_Last();
     }
     
     // compute the soft totals
     current.Add(1);
     for(int i = 13; i < 21; i++){ // for every soft total
+        current.Add(i-11);
         for(int j = 1; j < 11; j++){ // for every dealer card
-            current.Add(i-11);
             soft_chart[i-13][j-1] = BJ.Best_Move(pool, current, j);
-            current.Remove_Last();
         }
+        current.Remove_Last();
     }
-    current.Remove_Last();
+    current.Clear();
 
     // compute the split cards
     for(int i = 1; i < 11; i++){ // for every split card
+        current.Add(i);
+        current.Add(i);
         for(int j = 1; j < 11; j++){ // for every dealer card
-            current.Add(i);
-            current.Add(i);
             split_chart[i-1][j-1] = BJ.Best_Move(pool, current, j);
-            current.Remove_Last();
-            current.Remove_Last();
         }
+        current.Clear();
     }
 }
 
