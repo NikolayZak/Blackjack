@@ -188,8 +188,9 @@ double Blackjack::Dealer_Ace_Exception(Absent_Map pool, int my_total, Hand deale
 // technical debt : Add hashing
 double Blackjack::Stand_EV(const Absent_Map &pool, const Hand &current, int dealer_card){
     double ans = -1.0;
+    int my_total = current.High_Total();
 
-    if(current.High_Total() > 21){
+    if(my_total > 21){
         return ans;
     }
 
@@ -204,9 +205,9 @@ double Blackjack::Stand_EV(const Absent_Map &pool, const Hand &current, int deal
     D_Hand.Add(dealer_card);
     // dealer exception
     if(dealer_card == 1){
-        return Dealer_Ace_Exception(pool, current.High_Total(), D_Hand);
+        return Dealer_Ace_Exception(pool, my_total, D_Hand);
     }
-    Stand_Rec(pool, current.High_Total(), D_Hand, 1.0, ans);
+    Stand_Rec(pool, my_total, D_Hand, 1.0, ans);
 
     // hash
     insertEV(move_key, pool_key, ans);
@@ -336,11 +337,12 @@ void Blackjack::Print_Stats(const Absent_Map &pool, const Hand &current, int dea
     }
 }
 
+// Pre-condition: Dealer card should have been accounted for in the pool
 Move Blackjack::Best_Move(const Absent_Map &pool, const Hand &current, int dealer_card){
     Move ans;   // compute values
-    double S = Stand_EV(pool, current, dealer_card);
-    double H = Hit_EV(pool, current, dealer_card);
     double D = Double_EV(pool, current, dealer_card);
+    double H = Hit_EV(pool, current, dealer_card);
+    double S = Stand_EV(pool, current, dealer_card);
     double P = -10.0;
     if(current.Can_Split()){
         P = Split_EV(pool, current, dealer_card);

@@ -1,7 +1,7 @@
 #include "Strategy_Processing.hpp"
 #include "Stats.hpp"
 
-#define NUMBER_OF_DECKS 8
+#define NUMBER_OF_DECKS 4
 
 void print(const vector<int> &stack){
       cout << endl;
@@ -14,8 +14,31 @@ void print(const vector<int> &stack){
 int main(){
       Absent_Map test_map(NUMBER_OF_DECKS);
       Computed_Strategy_Chart Chart;
+      
 
-      // deal out and compute every permutation of 3 cards
+      // For now: computing each chart of 1 card missing at a time
+      for(int i = 1; i < 2; i++){
+            auto start = chrono::system_clock::now();
+
+            test_map.Add(1);
+
+            test_map.Print();
+            Chart.Configure(test_map);
+            Chart.Print_All();
+
+            test_map.Remove(i);
+
+            auto end = chrono::system_clock::now();
+            auto elapsed_seconds = chrono::duration_cast<chrono::seconds>(end - start);
+            cout << "Time Elapsed: " << elapsed_seconds.count() / 60 << " minutes " << elapsed_seconds.count() % 60 << " seconds\n";
+      }
+
+
+
+
+
+
+      /* deal out and compute every permutation of 1 card missing
       int max_cards = 3;
       int next_card;
       bool loop = true;
@@ -46,7 +69,7 @@ int main(){
                   stack.push_back(next_card);
             }
       }
-
+      */
       
       return 0;
 }

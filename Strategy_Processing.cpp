@@ -101,7 +101,6 @@ void Computed_Strategy_Chart::Configure(const Absent_Map &pool){
         for(int j = 1; j < 11; j++){ // for every dealer card
             current.Add(i);
             hard_chart[i-5][j-1] = BJ.Best_Move(pool, current, j);
-            hard_chart[i-5][j-1].Print();
             current.Remove_Last();
         }
     }
@@ -112,7 +111,6 @@ void Computed_Strategy_Chart::Configure(const Absent_Map &pool){
         for(int j = 1; j < 11; j++){ // for every dealer card
             current.Add(i-11);
             soft_chart[i-13][j-1] = BJ.Best_Move(pool, current, j);
-            soft_chart[i-13][j-1].Print();
             current.Remove_Last();
         }
     }
@@ -124,7 +122,6 @@ void Computed_Strategy_Chart::Configure(const Absent_Map &pool){
             current.Add(i);
             current.Add(i);
             split_chart[i-1][j-1] = BJ.Best_Move(pool, current, j);
-            split_chart[i-1][j-1].Print();
             current.Remove_Last();
             current.Remove_Last();
         }

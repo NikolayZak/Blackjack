@@ -9,6 +9,8 @@
 #include <cmath>
 #include <chrono>
 
+using namespace std;
+
 class Absent_Map{
     private:
     int remaining_cards[10];
@@ -25,6 +27,7 @@ class Absent_Map{
     int Cards_Left() const;
     uint64_t Map_Key() const;
     bool operator==(const Absent_Map &other) const;
+    void Print() const;
     Absent_Map(int number_of_decks);
     Absent_Map(const Absent_Map &a_map);
     ~Absent_Map();

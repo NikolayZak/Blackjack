@@ -73,6 +73,14 @@ uint64_t Absent_Map::Map_Key() const{
     return ans;
 }
 
+void Absent_Map::Print() const{
+    cout << "| ";
+    for(int i = 0; i < 10; i++){
+        cout << i + 1 << " = " << remaining_cards[i] << " | ";
+    }
+    cout << endl;
+}
+
 bool Absent_Map::operator==(const Absent_Map &other) const{
     if(cards == other.cards){
         for(int i = 0; i < 10; i++){

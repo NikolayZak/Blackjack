@@ -27,3 +27,6 @@ run: $(TARGET)
 clean:
 	rm -f $(TARGET).exe *.o
 	rm -f *.o
+
+nuke database:
+	rm -f BlackjackDB.db

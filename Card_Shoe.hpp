@@ -1,10 +1,7 @@
 #ifndef CARD_SHOE
 #define CARD_SHOE
 
-
 #include "Absent_Map.hpp"
-
-using namespace std;
 
 class Card_Shoe{
    private:
