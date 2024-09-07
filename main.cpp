@@ -3,14 +3,6 @@
 
 #define NUMBER_OF_DECKS 4
 
-void print(const vector<int> &stack){
-      cout << endl;
-      for(int i = 0; i < (int)stack.size(); i++){
-            cout << stack[i] << " ";
-      }
-      cout << endl;
-}
-
 int main(){
       Absent_Map test_map(NUMBER_OF_DECKS);
       Computed_Strategy_Chart Chart;
