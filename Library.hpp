@@ -4,19 +4,19 @@
 #include "Card_Shoe.hpp"
 
 struct Hand {
-    vector<int> cards; // technical debt : use a custom vector with purpose built methods
-    bool Ace;
+    int cards;
 
     void Add(int card);
     int High_Total() const;
     bool Can_Split() const;
+    bool Ace() const;
     void Clear();
-    void Remove_Last();
-    double Half_Permutation() const;
+    void Remove(int card);
+    void Split();
     Hand();
     ~Hand();
 };
-
+/*
 struct Player{
     Hand hands[2];
     int credit;
@@ -49,7 +49,7 @@ class Dealer{
     Dealer();
     ~Dealer();
 };
-
+*/
 struct Move{
     double EV;
     char name;
