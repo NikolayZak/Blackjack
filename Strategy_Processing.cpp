@@ -1,7 +1,7 @@
 #include "Strategy_Processing.hpp"
 // TODO
 // Add many layers of hashing
-// Test to see if splitting on 3's and 4's is optimal
+
 
 
 
@@ -149,6 +149,7 @@ void Computed_Strategy_Chart::Print_Hard(){
         }
         cout << hard_chart[i-5][0].name << " |\n";
     }
+    cout << endl;
 }
 
 void Computed_Strategy_Chart::Print_Soft(){
@@ -172,6 +173,7 @@ void Computed_Strategy_Chart::Print_Soft(){
         }
         cout << soft_chart[i-13][0].name << " |\n";
     }
+    cout << endl;
 }
 
 void Computed_Strategy_Chart::Print_Split(){
@@ -210,8 +212,6 @@ void Computed_Strategy_Chart::Print_Split(){
 
 void Computed_Strategy_Chart::Print_All(){
     Print_Hard();
-    cout << endl;
     Print_Soft();
-    cout << endl;
     Print_Split();
 }
