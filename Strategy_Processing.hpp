@@ -51,6 +51,7 @@
 class Computed_Strategy_Chart{
     private:
     Blackjack BJ;
+    double total_weight;
     double Compute_Weight(Absent_Map pool, const Hand &current);
 
     public:
@@ -68,6 +69,9 @@ class Computed_Strategy_Chart{
     void Print_Soft_Weight();
     void Print_Split_Weight();
     void Print_All();
+
+    Computed_Strategy_Chart();
+    ~Computed_Strategy_Chart();
 };
 
 #endif
