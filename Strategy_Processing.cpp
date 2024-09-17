@@ -105,16 +105,12 @@ double Computed_Strategy_Chart::Compute_Weight(Absent_Map pool, const Hand &curr
         }else{
             tmp = hand_total / 2;
         }
-        //pool.Remove(tmp);
-        //pool.Remove(tmp);
         return pool.Probability(tmp, tmp);
     }
 
     // case soft hand
     if(current.Ace()){ // case Hand: Ace + card x
         tmp = hand_total - 11;
-        //pool.Remove(1);
-        //pool.Remove(tmp);
         return pool.Probability(1, tmp);
     }
 
@@ -123,11 +119,7 @@ double Computed_Strategy_Chart::Compute_Weight(Absent_Map pool, const Hand &curr
     for(int i = 2; i < ((hand_total / 2) + 1); i++){
         tmp = hand_total - i;
         if(tmp != i && tmp < 11){
-            //pool.Remove(i);
-            //pool.Remove(tmp);
             ans += pool.Probability(i, tmp);
-            //pool.Add(i);
-            //pool.Add(tmp);
         }
     }
     return ans;
