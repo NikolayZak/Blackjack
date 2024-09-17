@@ -56,6 +56,12 @@ struct Move{
     void Print();
 };
 
+struct W_Move : Move{
+    double weight;
+    W_Move() : Move(), weight(0.0) {}
+    W_Move(const Move& move, double w) : Move(move), weight(w) {}
+};
+
 struct Hashed_Query{
     Absent_Map map;
     int total;
