@@ -124,10 +124,6 @@ void Blackjack::insertEV(short move_key, uint64_t pool_key, double ev) {
 
 // ****************************************************************************************************************************
 
-double Blackjack::BJ_EV(Absent_Map &pool){
-    return pool.Probability(10) * pool.Probability(1) * 5; // blackjack pays 2.5, there are 2 ways to draw 2 cards
-}
-
 // technical debt : reduce permutation counting : theoretically speed up = 10x
 void Blackjack::Stand_Rec(Absent_Map pool, int my_total, Hand dealer_hand, double multiplier, double &EV){
     // assuming the player_total is less then 22
