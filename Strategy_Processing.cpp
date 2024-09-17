@@ -105,16 +105,16 @@ double Computed_Strategy_Chart::Compute_Weight(Absent_Map pool, const Hand &curr
         }else{
             tmp = hand_total / 2;
         }
-        pool.Remove(tmp);
-        pool.Remove(tmp);
+        //pool.Remove(tmp);
+        //pool.Remove(tmp);
         return pool.Probability(tmp, tmp);
     }
 
     // case soft hand
     if(current.Ace()){ // case Hand: Ace + card x
         tmp = hand_total - 11;
-        pool.Remove(1);
-        pool.Remove(tmp);
+        //pool.Remove(1);
+        //pool.Remove(tmp);
         return pool.Probability(1, tmp);
     }
 
@@ -123,11 +123,11 @@ double Computed_Strategy_Chart::Compute_Weight(Absent_Map pool, const Hand &curr
     for(int i = 2; i < ((hand_total / 2) + 1); i++){
         tmp = hand_total - i;
         if(tmp != i && tmp < 11){
-            pool.Remove(i);
-            pool.Remove(tmp);
+            //pool.Remove(i);
+            //pool.Remove(tmp);
             ans += pool.Probability(i, tmp);
-            pool.Add(i);
-            pool.Add(tmp);
+            //pool.Add(i);
+            //pool.Add(tmp);
         }
     }
     return ans;
@@ -154,7 +154,7 @@ void Computed_Strategy_Chart::Configure(const Absent_Map &pool){
     current.Clear();
 
     current.Add(10);
-    for(int i = 12; i < 18; i++){ // for every hard total > 11
+    for(int i = 12; i < 20; i++){ // for every hard total > 11
         current.Add(i-10);
         for(int j = 1; j < 11; j++){ // for every dealer card
             hard_chart[i-5][j-1] = W_Move(BJ.Best_Move(pool, current, j), Compute_Weight(pool, current));
@@ -166,7 +166,7 @@ void Computed_Strategy_Chart::Configure(const Absent_Map &pool){
 
     // compute the soft totals
     current.Add(1);
-    for(int i = 13; i < 21; i++){ // for every soft total
+    for(int i = 13; i < 22; i++){ // for every soft total
         current.Add(i-11);
         for(int j = 1; j < 11; j++){ // for every dealer card
             soft_chart[i-13][j-1] = W_Move(BJ.Best_Move(pool, current, j), Compute_Weight(pool, current));
@@ -190,7 +190,7 @@ void Computed_Strategy_Chart::Print_Hard(){
     cout << "                         Dealer Upcard\n";
     cout << "  Hard Total | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | A |\n";
 
-    for(int i = 5; i < 18; i++){ // hard total
+    for(int i = 5; i < 20; i++){ // hard total
         cout << "      " << i;
         if(i > 9){
             cout << "     | ";
@@ -214,7 +214,7 @@ void Computed_Strategy_Chart::Print_Soft(){
     cout << "                         Dealer Upcard\n";
     cout << "  Soft Total | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | A |\n";
 
-    for(int i = 13; i < 21; i++){ // soft total
+    for(int i = 13; i < 22; i++){ // soft total
         cout << "      " << i;
         if(i > 9){
             cout << "     | ";
@@ -270,7 +270,7 @@ void Computed_Strategy_Chart::Print_Split(){
 void Computed_Strategy_Chart::Print_Hard_Weight(){
     cout << "  Hard Total\n";
 
-    for(int i = 5; i < 18; i++){ // hard total
+    for(int i = 5; i < 20; i++){ // hard total
         cout << "      " << i;
         if(i > 9){
             cout << "     | ";
@@ -285,7 +285,7 @@ void Computed_Strategy_Chart::Print_Hard_Weight(){
 void Computed_Strategy_Chart::Print_Soft_Weight(){
     cout << "  Soft Total\n";
 
-    for(int i = 13; i < 21; i++){ // soft total
+    for(int i = 13; i < 22; i++){ // soft total
         cout << "      " << i;
         if(i > 9){
             cout << "     | ";
@@ -322,11 +322,11 @@ void Computed_Strategy_Chart::Print_All(){
     Print_Split_Weight();
 
     double ans = 0;
-    for(int i = 0; i < 13; i++){
+    for(int i = 0; i < 15; i++){
         ans += hard_chart[i][0].weight;
     }
 
-    for(int i = 0; i < 8; i++){
+    for(int i = 0; i < 9; i++){
         ans += soft_chart[i][0].weight;
     }
 

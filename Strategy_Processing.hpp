@@ -55,11 +55,11 @@ class Computed_Strategy_Chart{
 
     public:
     // [Dealer_Card][Hard_Total]
-    W_Move hard_chart[13][10];
+    W_Move hard_chart[15][10];
+    // [Dealer_Card][Soft_Total]
+    W_Move soft_chart[9][10];
     // [Dealer_Card][Split_Cards]
     W_Move split_chart[10][10];
-    // [Dealer_Card][Soft_Total]
-    W_Move soft_chart[8][10];
     void Configure(const Absent_Map &pool);
     void Print_Hard();
     void Print_Soft();
