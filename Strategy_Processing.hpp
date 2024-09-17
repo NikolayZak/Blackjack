@@ -3,6 +3,9 @@
 
 #include "Blackjack.hpp"
 
+// NOTES: Best Move is computed based off the pool counting the deal
+//        Weight is computed based off of a hypothetical previous pool
+
 //                         Dealer Upcard
 //  Hard Total| 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | A |
 //      5     | H | H | H | H | H | H | H | H | H  | H |
@@ -48,18 +51,22 @@
 class Computed_Strategy_Chart{
     private:
     Blackjack BJ;
+    double Compute_Weight(Absent_Map pool, const Hand &current);
 
     public:
     // [Dealer_Card][Hard_Total]
-    Move hard_chart[13][10];
+    W_Move hard_chart[13][10];
     // [Dealer_Card][Split_Cards]
-    Move split_chart[10][10];
+    W_Move split_chart[10][10];
     // [Dealer_Card][Soft_Total]
-    Move soft_chart[8][10];
+    W_Move soft_chart[8][10];
     void Configure(const Absent_Map &pool);
     void Print_Hard();
     void Print_Soft();
     void Print_Split();
+    void Print_Hard_Weight();
+    void Print_Soft_Weight();
+    void Print_Split_Weight();
     void Print_All();
 };
 
