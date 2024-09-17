@@ -23,6 +23,7 @@ class Absent_Map{
     void Remove(int Theta);
     void Clear();
     double Probability(int Theta) const;
+    double Probability(int Alpha, int Delta) const;
     int Count(int Theta) const;
     int Cards_Left() const;
     uint64_t Map_Key() const;

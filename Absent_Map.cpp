@@ -49,6 +49,14 @@ double Absent_Map::Probability(int Theta) const{
     return (double)remaining_cards[Theta - 1]/(double)cards;
 }
 
+// P(Theta, Phi)
+double Absent_Map::Probability(int Theta, int Phi) const{
+    if(Theta == Phi){ // P(x) * P`(x)
+        return (double)(remaining_cards[Theta - 1] * remaining_cards[Phi - 1]) / (double)(cards * (cards - 1));
+    }
+    return (double)(remaining_cards[Theta - 1] * remaining_cards[Phi - 1]) / (double)(cards * (cards - 1)) * 2.0;
+}
+
 int Absent_Map::Count(int Theta) const {
     return remaining_cards[Theta - 1];
 }
