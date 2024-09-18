@@ -49,12 +49,20 @@ double Absent_Map::Probability(int Theta) const{
     return (double)remaining_cards[Theta - 1]/(double)cards;
 }
 
-// P(Theta, Phi)
-double Absent_Map::Probability(int Theta, int Phi) const{
-    if(Theta == Phi){ // P(x) * P`(x)
-        return (double)(remaining_cards[Theta - 1] * remaining_cards[Phi - 1]) / (double)(cards * (cards - 1));
+// Returns the probability of picking the first & second with permutations considering dealer was picked
+// pool is assumed to be before the picks
+double Absent_Map::Probability(int first, int second, int dealer) const{
+    if(first == second){
+        if(second == dealer){ // case first card == second_card == dealer_card
+            return (double)(remaining_cards[first - 1] * (remaining_cards[second - 1] - 1) * (remaining_cards[dealer - 1] - 2)) / (double)(cards * (cards - 1) * (cards - 2));
+        } // case first card == second card != dealer_card
+        return (double)(remaining_cards[first - 1] * (remaining_cards[second - 1] - 1) * remaining_cards[dealer - 1]) / (double)(cards * (cards - 1) * (cards - 2));
+    } // Implied: first != second -> there are 2 permutations for each hand -> return 2x
+    if(dealer == first || dealer == second){ // case dealer_card duplicate
+        return (double)(remaining_cards[first - 1] * remaining_cards[second - 1] * (remaining_cards[dealer - 1] - 1)) / (double)(cards * (cards - 1) * (cards - 2)) * 2.0;
     }
-    return (double)(remaining_cards[Theta - 1] * remaining_cards[Phi - 1]) / (double)(cards * (cards - 1)) * 2.0;
+    // case none are the same P(first) * P(second) * P(dealer)
+    return (double)(remaining_cards[first - 1] * remaining_cards[second - 1] * remaining_cards[dealer - 1]) / (double)(cards * (cards - 1) * (cards - 2)) * 2.0;
 }
 
 int Absent_Map::Count(int Theta) const {
