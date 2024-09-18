@@ -15,11 +15,14 @@ Blackjack::~Blackjack(){
 // Blob Layout: dealer_hand_total 0-4 | my_hand_total 5-9 | my_soft 10 | name 11-12
 short Blackjack::Move_Key(char name, const Hand &my_hand, int dealer_card){
     short ans = 0;
-
+    int my_total = my_hand.High_Total();
     //Split is hashed via double and hit methods
     switch(name){
     case 'S':
         ans |= 0x0;
+        if(my_total < 17){ // truncating my_totals below 17 as they are all the same wr wise
+            my_total = 0;
+        }
         break;
     case 'H':
         ans |= 0x1;
@@ -40,10 +43,7 @@ short Blackjack::Move_Key(char name, const Hand &my_hand, int dealer_card){
 
     // my_hand_total
     ans = ans << 5;
-    int tmp = my_hand.High_Total();
-    if(tmp > 16 || 1){ // truncating the hand totals (anything less than 17 is win by dealer bust and can remain 0)
-        ans |= short(tmp & 0x1F);
-    }
+    ans |= short(my_total & 0x1F);
 
     // dealer_card
     ans = ans << 5;
