@@ -3,7 +3,7 @@
 // Need to compute weights based off the dealer card aswell
 
 Computed_Strategy_Chart::Computed_Strategy_Chart(){
-    total_weight = 0;
+    EV = -1;
 }
 
 Computed_Strategy_Chart::~Computed_Strategy_Chart(){
@@ -96,29 +96,23 @@ void Computed_Strategy_Chart::Configure(const Absent_Map &pool){
         current.Clear();
     }
 
-    // Computing the total weight
-    double weight_count = 0;
-    double ev_count = 0;
-    for(int i = 0; i < 15; i++){ // hard chart weights
+    // Computing the total ev
+    EV = 0;
+    for(int i = 0; i < 15; i++){ // hard chart evs
         for(int j = 0; j < 10; j++){
-            weight_count += hard_chart[i][j].weight;
-            ev_count += hard_chart[i][j].weight * hard_chart[i][j].EV;
+            EV += hard_chart[i][j].weight * hard_chart[i][j].EV;
         }
     }
-    for(int i = 0; i < 9; i++){ // soft chart weights
+    for(int i = 0; i < 9; i++){ // soft chart evs
         for(int j = 0; j < 10; j++){
-            weight_count += soft_chart[i][j].weight;
-            ev_count += soft_chart[i][j].weight * soft_chart[i][j].EV;
+            EV += soft_chart[i][j].weight * soft_chart[i][j].EV;
         }
     }
-    for(int i = 0; i < 10; i++){ // split chart weights
+    for(int i = 0; i < 10; i++){ // split chart evs
         for(int j = 0; j < 10; j++){
-            weight_count += split_chart[i][j].weight;
-            ev_count += split_chart[i][j].weight * split_chart[i][j].EV;
+            EV += split_chart[i][j].weight * split_chart[i][j].EV;
         }
     }
-    total_weight = weight_count;
-    EV = ev_count;
 }
 
 void Computed_Strategy_Chart::Print_Hard(){
@@ -256,5 +250,5 @@ void Computed_Strategy_Chart::Print_All(){
     Print_Soft_Weight();
     Print_Split();
     Print_Split_Weight();
-    cout << endl << "Total weight: " << total_weight << endl << "Total EV: " << EV << endl << endl;
+    cout << endl << "Total EV: " << EV << endl << endl;
 }

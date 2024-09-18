@@ -61,7 +61,6 @@ class Computed_Strategy_Chart{
     // [Dealer_Card][Split_Cards]
     W_Move split_chart[10][10];
 
-    double total_weight;
     double EV;
 
 
