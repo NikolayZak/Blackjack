@@ -1,5 +1,4 @@
 #include "Strategy_Processing.hpp"
-#include "Stats.hpp"
 
 #define NUMBER_OF_DECKS 4
 

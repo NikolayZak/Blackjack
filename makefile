@@ -9,7 +9,6 @@ OBJ_FILES = Absent_Map.o \
 			Library.o \
 			Blackjack.o \
 			Strategy_Processing.o \
-			Stats.o \
 			main.o \
 
 all: $(TARGET)
