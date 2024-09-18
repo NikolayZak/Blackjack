@@ -8,7 +8,7 @@ int main(){
       Computed_Strategy_Chart Chart;
       
       // For now: computing each chart of 1 card missing at a time
-      for(int i = 1; i < 3; i++){
+      for(int i = 1; i < 11; i++){
             auto start = chrono::system_clock::now();
 
             test_map.Add(i);
@@ -23,7 +23,6 @@ int main(){
             auto elapsed_seconds = chrono::duration_cast<chrono::seconds>(end - start);
             cout << "Time Elapsed: " << elapsed_seconds.count() / 60 << " minutes " << elapsed_seconds.count() % 60 << " seconds\n";
       }
-
       
       return 0;
 }
