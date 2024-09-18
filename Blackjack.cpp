@@ -40,7 +40,10 @@ short Blackjack::Move_Key(char name, const Hand &my_hand, int dealer_card){
 
     // my_hand_total
     ans = ans << 5;
-    ans |= short(my_hand.High_Total() & 0x1F);
+    int tmp = my_hand.High_Total();
+    if(tmp > 16 || 1){ // truncating the hand totals (anything less than 17 is win by dealer bust and can remain 0)
+        ans |= short(tmp & 0x1F);
+    }
 
     // dealer_card
     ans = ans << 5;
@@ -181,7 +184,8 @@ double Blackjack::Dealer_Ace_Exception(Absent_Map pool, int my_total, Hand deale
 }
 
 // returns the expected value of a stand in this position
-// technical debt : Add hashing
+// technical debt : Re-program to store an array of ev values for [<16, 17, ..., 21] (Aka compute all hand total values in 1 go)
+// Part 2: currently
 double Blackjack::Stand_EV(const Absent_Map &pool, const Hand &current, int dealer_card){
     double ans = -1.0;
     int my_total = current.High_Total();
