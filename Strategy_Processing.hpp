@@ -51,8 +51,7 @@
 class Computed_Strategy_Chart{
     private:
     Blackjack BJ;
-    double total_weight;
-    double Compute_Weight(Absent_Map pool, const Hand &current);
+    double Compute_Weight(const Absent_Map &pool, const Hand &current, int dealer_card);
 
     public:
     // [Dealer_Card][Hard_Total]
@@ -61,6 +60,11 @@ class Computed_Strategy_Chart{
     W_Move soft_chart[9][10];
     // [Dealer_Card][Split_Cards]
     W_Move split_chart[10][10];
+
+    double total_weight;
+    double EV;
+
+
     void Configure(const Absent_Map &pool);
     void Print_Hard();
     void Print_Soft();

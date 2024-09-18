@@ -1,5 +1,7 @@
 #include "Strategy_Processing.hpp"
 
+// Need to compute weights based off the dealer card aswell
+
 Computed_Strategy_Chart::Computed_Strategy_Chart(){
     total_weight = 0;
 }
@@ -11,7 +13,8 @@ Computed_Strategy_Chart::~Computed_Strategy_Chart(){
 
 // Precondition: current is a Hand with 2 elements
 // Assuming Pool is after the deal
-double Computed_Strategy_Chart::Compute_Weight(Absent_Map pool, const Hand &current){
+// Consequence splits are not considered hard total weights (aka 4,4 will not be considered in the weight of hard 8)
+double Computed_Strategy_Chart::Compute_Weight(const Absent_Map &pool, const Hand &current, int dealer_card){
     int tmp;
     int hand_total = current.High_Total();
     // case splits
@@ -21,13 +24,13 @@ double Computed_Strategy_Chart::Compute_Weight(Absent_Map pool, const Hand &curr
         }else{
             tmp = hand_total / 2;
         }
-        return pool.Probability(tmp, tmp);
+        return pool.Probability(tmp, tmp, dealer_card);
     }
 
     // case soft hand
     if(current.Ace()){ // case Hand: Ace + card x
         tmp = hand_total - 11;
-        return pool.Probability(1, tmp);
+        return pool.Probability(1, tmp, dealer_card);
     }
 
     // compute the number of ways to get the hard_total
@@ -35,7 +38,7 @@ double Computed_Strategy_Chart::Compute_Weight(Absent_Map pool, const Hand &curr
     for(int i = 2; i < ((hand_total / 2) + 1); i++){
         tmp = hand_total - i;
         if(tmp != i && tmp < 11){
-            ans += pool.Probability(i, tmp);
+            ans += pool.Probability(i, tmp, dealer_card);
         }
     }
     return ans;
@@ -49,7 +52,7 @@ void Computed_Strategy_Chart::Configure(const Absent_Map &pool){
     for(int i = 5; i < 11; i++){ // for every hard total < 11
         current.Add(i);
         for(int j = 1; j < 11; j++){ // for every dealer card
-            hard_chart[i-5][j-1] = W_Move(BJ.Best_Move(pool, current, j), Compute_Weight(pool, current));
+            hard_chart[i-5][j-1] = W_Move(BJ.Best_Move(pool, current, j), Compute_Weight(pool, current, j));
         }
         current.Clear();
     }
@@ -57,7 +60,7 @@ void Computed_Strategy_Chart::Configure(const Absent_Map &pool){
     current.Add(6);
     current.Add(5); // for hard total = 11
     for(int j = 1; j < 11; j++){ // for every dealer card
-        hard_chart[6][j-1] = W_Move(BJ.Best_Move(pool, current, j), Compute_Weight(pool, current));
+        hard_chart[6][j-1] = W_Move(BJ.Best_Move(pool, current, j), Compute_Weight(pool, current, j));
     }
     current.Clear();
 
@@ -65,7 +68,7 @@ void Computed_Strategy_Chart::Configure(const Absent_Map &pool){
     for(int i = 12; i < 20; i++){ // for every hard total > 11
         current.Add(i-10);
         for(int j = 1; j < 11; j++){ // for every dealer card
-            hard_chart[i-5][j-1] = W_Move(BJ.Best_Move(pool, current, j), Compute_Weight(pool, current));
+            hard_chart[i-5][j-1] = W_Move(BJ.Best_Move(pool, current, j), Compute_Weight(pool, current, j));
         }
         current.Remove(i-10);
     }
@@ -77,7 +80,7 @@ void Computed_Strategy_Chart::Configure(const Absent_Map &pool){
     for(int i = 13; i < 22; i++){ // for every soft total
         current.Add(i-11);
         for(int j = 1; j < 11; j++){ // for every dealer card
-            soft_chart[i-13][j-1] = W_Move(BJ.Best_Move(pool, current, j), Compute_Weight(pool, current));
+            soft_chart[i-13][j-1] = W_Move(BJ.Best_Move(pool, current, j), Compute_Weight(pool, current, j));
         }
         current.Remove(i-11);
     }
@@ -88,25 +91,34 @@ void Computed_Strategy_Chart::Configure(const Absent_Map &pool){
         current.Add(i);
         current.Add(i);
         for(int j = 1; j < 11; j++){ // for every dealer card
-            split_chart[i-1][j-1] = W_Move(BJ.Best_Move(pool, current, j), Compute_Weight(pool, current));
+            split_chart[i-1][j-1] = W_Move(BJ.Best_Move(pool, current, j), Compute_Weight(pool, current, j));
         }
         current.Clear();
     }
 
     // Computing the total weight
-    double counter = 0;
-    for(int i = 0; i < 15; i++){
-        counter += hard_chart[i][0].weight;
+    double weight_count = 0;
+    double ev_count = 0;
+    for(int i = 0; i < 15; i++){ // hard chart weights
+        for(int j = 0; j < 10; j++){
+            weight_count += hard_chart[i][j].weight;
+            ev_count += hard_chart[i][j].weight * hard_chart[i][j].EV;
+        }
     }
-
-    for(int i = 0; i < 9; i++){
-        counter += soft_chart[i][0].weight;
+    for(int i = 0; i < 9; i++){ // soft chart weights
+        for(int j = 0; j < 10; j++){
+            weight_count += soft_chart[i][j].weight;
+            ev_count += soft_chart[i][j].weight * soft_chart[i][j].EV;
+        }
     }
-
-    for(int i = 0; i < 10; i++){
-        counter += split_chart[i][0].weight;
+    for(int i = 0; i < 10; i++){ // split chart weights
+        for(int j = 0; j < 10; j++){
+            weight_count += split_chart[i][j].weight;
+            ev_count += split_chart[i][j].weight * split_chart[i][j].EV;
+        }
     }
-    total_weight = counter;
+    total_weight = weight_count;
+    EV = ev_count;
 }
 
 void Computed_Strategy_Chart::Print_Hard(){
@@ -244,5 +256,5 @@ void Computed_Strategy_Chart::Print_All(){
     Print_Soft_Weight();
     Print_Split();
     Print_Split_Weight();
-    cout << endl << "Total weight: " << total_weight << endl;
+    cout << endl << "Total weight: " << total_weight << endl << "Total EV: " << EV << endl << endl;
 }
