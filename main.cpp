@@ -2,11 +2,12 @@
 
 #define NUMBER_OF_DECKS 4
 
+// Must never exceed NUMBER_OF_DECKS * 4
 #define NUMBER_OF_POOL_ADDS 3
 
 void compute_rec(Absent_Map current){
       Computed_Strategy_Chart Chart;
-      if(current.Cards_Left() != NUMBER_OF_DECKS * 52 - NUMBER_OF_POOL_ADDS){
+      if(current.Cards_Left() > NUMBER_OF_DECKS * 52 - NUMBER_OF_POOL_ADDS){
             for(int i = 1; i < 11; i++){
                   current.Add(i);
                   compute_rec(current);
