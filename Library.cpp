@@ -2,64 +2,44 @@
 
 // ******************************************************   Hand Method   ******************************************************
 void Hand::Add(int card){
-    int mask = 0;
-    int shift = 0; // Shift amount to isolate the specific card's bits
     switch(card){
     case 1:
-        mask = 0x1F;
-        shift = 0;
+        cards++;
         break;
     case 2:
-        mask = 0x1E0;
-        shift = 5;
+        cards += 0x20;
         break;
     case 3:
-        mask = 0x1E00;
-        shift = 9;
+        cards += 0x200;
         break;
     case 4:
-        mask = 0xE000;
-        shift = 13;
+        cards += 0x2000;
         break;
     case 5:
-        mask = 0x70000;
-        shift = 16;
+        cards += 0x10000;
         break;
     case 6:
-        mask = 0x380000;
-        shift = 19;
+        cards += 0x80000;
         break;
     case 7:
-        mask = 0x1C00000;
-        shift = 22;
+        cards += 0x400000;
         break;
     case 8:
-        mask = 0x6000000;
-        shift = 25;
+        cards += 0x2000000;
         break;
     case 9:
-        mask = 0x18000000;
-        shift = 27;
+        cards += 0x8000000;
         break;
     case 10:
-        mask = 0x60000000;
-        shift = 29;
+        cards += 0x20000000;
         break;
     }
-    
-    // Extract the current value, increment it, and apply it back to the bitmask
-    int current_value = (cards & mask) >> shift;  // Isolate the bits and shift them to the right
-    current_value++;  // Increment the count
-    current_value = current_value << shift;  // Shift the incremented value back to its original position
-
-    // Clear the old value in the bitfield and insert the incremented value
-    cards = (cards & ~mask) | (current_value & mask);
 }
 
 
 int Hand::High_Total() const {
     int counter = 0;
-    int mask = 0;
+    int mask;
     // case 10's
     mask = 0x60000000;
     counter += ((cards & mask) >> 29) * 10;
@@ -141,6 +121,7 @@ bool Hand::Can_Split() const {
     return false;
 }
 
+// checks for an
 bool Hand::Ace() const{
     return (cards & 0x1F) != 0;
 }
@@ -150,60 +131,41 @@ void Hand::Clear(){
 }
 
 void Hand::Remove(int card){
-    int mask = 0;
-    int shift = 0; // Shift amount to isolate the specific card's bits
     switch(card){
     case 1:
-        mask = 0x1F;
-        shift = 0;
+        cards--;
         break;
     case 2:
-        mask = 0x1E0;
-        shift = 5;
+        cards -= 0x20;
         break;
     case 3:
-        mask = 0x1E00;
-        shift = 9;
+        cards -= 0x200;
         break;
     case 4:
-        mask = 0xE000;
-        shift = 13;
+        cards -= 0x2000;
         break;
     case 5:
-        mask = 0x70000;
-        shift = 16;
+        cards -= 0x10000;
         break;
     case 6:
-        mask = 0x380000;
-        shift = 19;
+        cards -= 0x80000;
         break;
     case 7:
-        mask = 0x1C00000;
-        shift = 22;
+        cards -= 0x400000;
         break;
     case 8:
-        mask = 0x6000000;
-        shift = 25;
+        cards -= 0x2000000;
         break;
     case 9:
-        mask = 0x18000000;
-        shift = 27;
+        cards -= 0x8000000;
         break;
     case 10:
-        mask = 0x60000000;
-        shift = 29;
+        cards -= 0x20000000;
         break;
     }
-    
-    // Extract the current value, increment it, and apply it back to the bitmask
-    int current_value = (cards & mask) >> shift;  // Isolate the bits and shift them to the right
-    current_value--;  // Decrement the count
-    current_value = current_value << shift;  // Shift the incremented value back to its original position
-
-    // Clear the old value in the bitfield and insert the incremented value
-    cards = (cards & ~mask) | (current_value & mask);
 }
 
+// Precondition: 2 of the same card gets turned into 1 of that card
 void Hand::Split(){
     cards = cards >> 1;
 }
@@ -214,113 +176,4 @@ Hand::Hand(){
 
 Hand::~Hand(){
     // nothing
-}
-// ******************************************************   Player Method   ******************************************************
-/*
-Player::Player(int money){
-    credit = money;
-}
-
-Player::~Player(){
-    for(int i = 0; i < 2; i++){
-        hands[i].Clear();
-    }
-}
-
-void Player::Hit(Card_Shoe &shoe, int hand_num){
-    int draw = shoe.Deal();
-    hands[hand_num].Add(draw);
-}
-
-void Player::Deal_In(Card_Shoe &shoe, int money){
-    split = false;
-    blackjack = false;
-    hands[0].Clear();
-    hands[1].Clear();
-    wager = money;
-
-    Hit(shoe, 0);
-    Hit(shoe, 0);
-    if(hands[0].High_Total() == 21){
-        blackjack = true;
-    }
-}
-
-void Player::Split(Card_Shoe &shoe){
-    int descendant = hands[0].cards.back();
-    hands[0].cards.pop_back();
-    hands[1].Add(descendant);
-    Hit(shoe, 0);
-    Hit(shoe, 1);
-    wager *= 2;
-    split = true;
-}
-
-void Player::Double(Card_Shoe &shoe){
-    Hit(shoe, 0);
-    wager *= 2;
-}
-
-void Player::Win(){
-    if(split){ // split
-        credit += wager / 2;
-    }else if(blackjack){ // blackjack
-        credit += wager * 1.5;
-    }else{// regular win
-        credit += wager;
-    }
-}
-
-void Player::Lose(){
-    if(split){ // split
-        credit -= wager / 2;
-    }else{ // regular loss
-        credit -= wager;
-    }
-}
-// ******************************************************   Dealer Method   ******************************************************
-Dealer::Dealer(){
-    //nothing
-}
-
-Dealer::~Dealer(){
-    hand.Clear();
-}
-
-void Dealer::Hit(Card_Shoe &shoe){
-    hand.Add(shoe.Deal());
-}
-
-void Dealer::Deal_In(Card_Shoe &shoe){
-    hand.Clear();
-    Hit(shoe); // dealer only has 1 card to simplify
-}
-
-void Dealer::Call(Card_Shoe &shoe){
-    Hit(shoe);
-    while(hand.High_Total() < 17){
-        Hit(shoe);
-    }
-}
-
-int Dealer::Total(){
-    return hand.High_Total();
-}
-
-int Dealer::Dealer_Card(){
-    return hand.cards.front();
-}
-
-void Dealer::Clear(){
-    hand.Clear();
-}
-*/
-// ******************************************************   Miscellaneous   ******************************************************
-
-void Move::Print(){
-    cout << name << " = " << EV << endl;
-}
-
-Hashed_Query::Hashed_Query(const Absent_Map &a_map, int high_total) : map(a_map){
-    total = high_total;
 }
