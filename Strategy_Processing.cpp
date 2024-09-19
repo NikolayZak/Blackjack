@@ -196,59 +196,10 @@ void Computed_Strategy_Chart::Print_Split(){
     cout << split_chart[0][0].name << " |\n";
 }
 
-void Computed_Strategy_Chart::Print_Hard_Weight(){
-    cout << "  Hard Total\n";
-
-    for(int i = 5; i < 20; i++){ // hard total
-        cout << "      " << i;
-        if(i > 9){
-            cout << "     | ";
-        }else{
-            cout << "      | ";
-        }
-        cout << hard_chart[i-5][0].weight << endl;
-    }
-    cout << endl;
-}
-
-void Computed_Strategy_Chart::Print_Soft_Weight(){
-    cout << "  Soft Total\n";
-
-    for(int i = 13; i < 22; i++){ // soft total
-        cout << "      " << i;
-        if(i > 9){
-            cout << "     | ";
-        }else{
-            cout << "      | ";
-        }
-        cout << soft_chart[i-13][0].weight << endl;
-    }
-    cout << endl;
-}
-
-void Computed_Strategy_Chart::Print_Split_Weight(){
-    cout << " Split Cards\n";
-
-    for(int i = 2; i < 11; i++){ // soft total
-        if(i == 10){
-            cout << "    " << i << "," << i << "    | ";
-        }else{
-            cout << "     " << i << "," << i << "     | ";
-        }
-        cout << split_chart[i-1][0].weight << endl;
-    }
-    
-    cout << "     A,A     | ";
-    cout << split_chart[0][0].weight << endl;
-}
-
 // Precondition MUST BE CONFIGURED
 void Computed_Strategy_Chart::Print_All(){
     Print_Hard();
-    Print_Hard_Weight();
     Print_Soft();
-    Print_Soft_Weight();
     Print_Split();
-    Print_Split_Weight();
     cout << endl << "Total EV: " << EV << endl << endl;
 }

@@ -68,9 +68,6 @@ class Computed_Strategy_Chart{
     void Print_Hard();
     void Print_Soft();
     void Print_Split();
-    void Print_Hard_Weight();
-    void Print_Soft_Weight();
-    void Print_Split_Weight();
     void Print_All();
 
     Computed_Strategy_Chart();
