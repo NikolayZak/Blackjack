@@ -3,7 +3,7 @@
 #define NUMBER_OF_DECKS 4
 
 // Must never exceed NUMBER_OF_DECKS * 4
-#define NUMBER_OF_POOL_ADDS 3
+#define NUMBER_OF_POOL_ADDS 2
 
 void compute_rec(Absent_Map current){
       Computed_Strategy_Chart Chart;
@@ -15,13 +15,13 @@ void compute_rec(Absent_Map current){
             }
       }
       auto start = chrono::system_clock::now();
-
+      current.Print();
       Chart.Configure(current);
       Chart.Print_All();
 
       auto end = chrono::system_clock::now();
       auto elapsed_seconds = chrono::duration_cast<chrono::seconds>(end - start);
-      cout << "Time Elapsed: " << elapsed_seconds.count() / 60 << " minutes " << elapsed_seconds.count() % 60 << " seconds\n";
+      cout << "Total Time Elapsed: " << elapsed_seconds.count() / 60 << " minutes " << elapsed_seconds.count() % 60 << " seconds\n";
 }
 
 
