@@ -104,7 +104,7 @@ bool Blackjack::getEVIfExists(short move_key, uint64_t pool_key, double& ev) {
 }
 
 void Blackjack::insertEV(short move_key, uint64_t pool_key, double ev) {
-    const char* insertSQL = "INSERT INTO EVTable (move_key, pool_key, EV) VALUES (?, ?, ?);";
+    const char* insertSQL = "INSERT OR IGNORE INTO EVTable (move_key, pool_key, EV) VALUES (?, ?, ?);";
     sqlite3_stmt* stmt;
     int rc = sqlite3_prepare_v2(db, insertSQL, -1, &stmt, 0);
     if (rc == SQLITE_OK) {
@@ -114,7 +114,6 @@ void Blackjack::insertEV(short move_key, uint64_t pool_key, double ev) {
         sqlite3_bind_int64(stmt, 2, pool_key);
         // Bind the EV value
         sqlite3_bind_double(stmt, 3, ev);
-
         rc = sqlite3_step(stmt);
         if (rc != SQLITE_DONE) {
             std::cerr << "Failed to insert data: " << sqlite3_errmsg(db) << std::endl;
@@ -186,7 +185,7 @@ double Blackjack::Dealer_Ace_Exception(Absent_Map pool, int my_total, Hand deale
 // returns the expected value of a stand in this position
 // technical debt : Re-program to store an array of ev values for [<16, 17, ..., 21] (Aka compute all hand total values in 1 go)
 // Part 2: currently
-double Blackjack::Stand_EV(const Absent_Map &pool, const Hand &current, int dealer_card){
+double Blackjack::Stand_EV(const Absent_Map &pool, const Hand &current, int dealer_card, bool hash){
     double ans = -1.0;
     int my_total = current.High_Total();
 
@@ -195,10 +194,14 @@ double Blackjack::Stand_EV(const Absent_Map &pool, const Hand &current, int deal
     }
 
     // check hashed
-    short move_key = Move_Key('S', current, dealer_card);
-    uint64_t pool_key = pool.Map_Key();
-    if(getEVIfExists(move_key, pool_key, ans)){
-        return ans;
+    short move_key = 0;
+    uint64_t pool_key = 0;
+    if(hash){
+        move_key = Move_Key('S', current, dealer_card);
+        pool_key = pool.Map_Key();
+        if(getEVIfExists(move_key, pool_key, ans)){
+            return ans;
+        }
     }
 
     Hand D_Hand;
@@ -210,7 +213,9 @@ double Blackjack::Stand_EV(const Absent_Map &pool, const Hand &current, int deal
     Stand_Rec(pool, my_total, D_Hand, 1.0, ans);
 
     // hash
-    insertEV(move_key, pool_key, ans);
+    if(hash){
+        insertEV(move_key, pool_key, ans);
+    }
     return ans;
 }
 
@@ -222,7 +227,7 @@ double Blackjack::Hit_Rec(Absent_Map pool, Hand my_hand, int dealer_card, double
 
     // compute Stand EV and Hit EV
     double hit_ev = 0.0;
-    double stand_ev = Stand_EV(pool, my_hand, dealer_card) * multiplier;
+    double stand_ev = Stand_EV(pool, my_hand, dealer_card, false) * multiplier;
     double original_prob = multiplier; // save state
     int card_dups;
     for(int i = 1; i < 11; i++){
@@ -300,7 +305,7 @@ double Blackjack::Double_EV(const Absent_Map &pool, const Hand &current, int dea
         card_prob = map.Probability(i);
         my_hand.Add(i);
         map.Add(i);
-        ans += Stand_EV(map, my_hand, dealer_card) * card_prob;
+        ans += Stand_EV(map, my_hand, dealer_card, false) * card_prob;
         my_hand.Remove(i);
         map.Remove(i);
     }
@@ -324,7 +329,7 @@ double Blackjack::Split_EV(const Absent_Map &pool, const Hand &current, int deal
 }
 
 void Blackjack::Print_Stats(const Absent_Map &pool, const Hand &current, int dealer_card){
-    double S = Stand_EV(pool, current, dealer_card);
+    double S = Stand_EV(pool, current, dealer_card, true);
     double H = Hit_EV(pool, current, dealer_card);
     double D = Double_EV(pool, current, dealer_card);
     cout << "Stand EV: " << S << endl;
@@ -342,7 +347,7 @@ Move Blackjack::Best_Move(const Absent_Map &pool, const Hand &current, int deale
     Move ans;   // compute values
     double D = Double_EV(pool, current, dealer_card);
     double H = Hit_EV(pool, current, dealer_card);
-    double S = Stand_EV(pool, current, dealer_card);
+    double S = Stand_EV(pool, current, dealer_card, true);
     double P = -10.0;
     if(current.Can_Split()){
         P = Split_EV(pool, current, dealer_card);

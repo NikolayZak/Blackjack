@@ -30,7 +30,7 @@ class Blackjack{
     Blackjack();
     ~Blackjack();
 
-    double Stand_EV(const Absent_Map &pool, const Hand &current, int dealer_card);
+    double Stand_EV(const Absent_Map &pool, const Hand &current, int dealer_card, bool hash);
     double Hit_EV(const Absent_Map &pool, const Hand &current, int dealer_card);
     double Double_EV(const Absent_Map &pool, const Hand &current, int dealer_card);
     double Split_EV(const Absent_Map &pool, const Hand &current, int dealer_card);
