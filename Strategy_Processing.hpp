@@ -3,6 +3,7 @@
 
 #include "Blackjack.hpp"
 #include <thread>
+#include <future>
 // NOTES: Best Move is computed based off the pool counting the deal
 //        Weight is computed based off of a hypothetical previous pool
 
@@ -11,6 +12,10 @@ class Computed_Strategy_Chart{
     Blackjack BJ;
     vector<thread> workers;
     double Compute_Weight(const Absent_Map &pool, const Hand &current, int dealer_card);
+    void Configure_Hard(const Absent_Map &pool);
+    void Configure_Soft(const Absent_Map &pool);
+    void Configure_Split(const Absent_Map &pool);
+    void Configure_EV();
 
     public:
     // [Dealer_Card][Hard_Total]

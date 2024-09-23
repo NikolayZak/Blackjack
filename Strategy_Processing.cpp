@@ -44,59 +44,128 @@ double Computed_Strategy_Chart::Compute_Weight(const Absent_Map &pool, const Han
     return ans;
 }
 
-
-void Computed_Strategy_Chart::Configure(const Absent_Map &pool){
+void Computed_Strategy_Chart::Configure_Hard(const Absent_Map &pool) {
     Hand current;
-    
-    // compute the hard totals
-    for(int i = 5; i < 11; i++){ // for every hard total < 11
+
+    // Vector to store threads for each section
+    std::vector<std::thread> threads;
+
+    // Compute the hard totals < 11
+    for(int i = 5; i < 11; i++) { // For every hard total < 11
         current.Add(i);
-        for(int j = 1; j < 11; j++){ // for every dealer card
-            hard_chart[i-5][j-1] = W_Move(BJ.Best_Move(pool, current, j), Compute_Weight(pool, current, j));
+
+        // Multithread the inner loop
+        for(int j = 1; j < 11; j++) {
+            threads.emplace_back([this, &pool, &current, i, j]() {
+                hard_chart[i-5][j-1] = W_Move(BJ.Best_Move(pool, current, j), Compute_Weight(pool, current, j));
+            });
         }
+
+        // Join threads for this iteration
+        for (auto &th : threads) {
+            if (th.joinable()) th.join();
+        }
+        threads.clear();  // Clear the threads vector after joining
+
         current.Clear();
     }
 
+    // Compute for hard total = 11
     current.Add(6);
-    current.Add(5); // for hard total = 11
-    for(int j = 1; j < 11; j++){ // for every dealer card
-        hard_chart[6][j-1] = W_Move(BJ.Best_Move(pool, current, j), Compute_Weight(pool, current, j));
+    current.Add(5); // Hard total = 11
+
+    // Multithread the inner loop
+    for(int j = 1; j < 11; j++) {
+        threads.emplace_back([this, &pool, &current, j]() {
+            hard_chart[6][j-1] = W_Move(BJ.Best_Move(pool, current, j), Compute_Weight(pool, current, j));
+        });
     }
+
+    // Join threads for this section
+    for (auto &th : threads) {
+        if (th.joinable()) th.join();
+    }
+    threads.clear();  // Clear the threads vector after joining
+
     current.Clear();
 
+    // Compute the hard totals > 11
     current.Add(10);
-    for(int i = 12; i < 20; i++){ // for every hard total > 11
+    for(int i = 12; i < 20; i++) { // For every hard total > 11
         current.Add(i-10);
-        for(int j = 1; j < 11; j++){ // for every dealer card
-            hard_chart[i-5][j-1] = W_Move(BJ.Best_Move(pool, current, j), Compute_Weight(pool, current, j));
+
+        // Multithread the inner loop
+        for(int j = 1; j < 11; j++) {
+            threads.emplace_back([this, &pool, &current, i, j]() {
+                hard_chart[i-5][j-1] = W_Move(BJ.Best_Move(pool, current, j), Compute_Weight(pool, current, j));
+            });
         }
+
+        // Join threads for this iteration
+        for (auto &th : threads) {
+            if (th.joinable()) th.join();
+        }
+        threads.clear();  // Clear the threads vector after joining
+
         current.Remove(i-10);
     }
-    current.Clear();
-    
+}
 
-    // compute the soft totals
+void Computed_Strategy_Chart::Configure_Soft(const Absent_Map &pool) {
+    Hand current;
     current.Add(1);
-    for(int i = 13; i < 22; i++){ // for every soft total
-        current.Add(i-11);
-        for(int j = 1; j < 11; j++){ // for every dealer card
-            soft_chart[i-13][j-1] = W_Move(BJ.Best_Move(pool, current, j), Compute_Weight(pool, current, j));
-        }
-        current.Remove(i-11);
-    }
-    current.Clear();
 
-    // compute the split cards
-    for(int i = 1; i < 11; i++){ // for every split card
-        current.Add(i);
-        current.Add(i);
-        for(int j = 1; j < 11; j++){ // for every dealer card
-            split_chart[i-1][j-1] = W_Move(BJ.Best_Move(pool, current, j), Compute_Weight(pool, current, j));
+    // Vector to store futures (asynchronous tasks)
+    std::vector<std::future<void>> futures;
+
+    // Outer loop remains the same
+    for(int i = 13; i < 22; i++) { // For every soft total
+        current.Add(i - 11);
+
+        // Parallelize the inner loop using futures and async
+        for(int j = 1; j < 11; j++) {
+            futures.push_back(std::async(std::launch::async, [this, &pool, current, i, j]() mutable {
+                soft_chart[i-13][j-1] = W_Move(BJ.Best_Move(pool, current, j), Compute_Weight(pool, current, j));
+            }));
         }
+
+        current.Remove(i - 11);
+    }
+
+    // Wait for all futures to complete
+    for (auto &fut : futures) {
+        fut.get(); // Ensures all tasks complete before proceeding
+    }
+}
+
+void Computed_Strategy_Chart::Configure_Split(const Absent_Map &pool) {
+    Hand current;
+
+    // Vector to store futures (asynchronous tasks)
+    std::vector<std::future<void>> futures;
+
+    // Outer loop remains the same
+    for(int i = 1; i < 11; i++) { // For every split card
+        current.Add(i);
+        current.Add(i);
+
+        // Parallelize the inner loop using futures and async
+        for(int j = 1; j < 11; j++) {
+            futures.push_back(std::async(std::launch::async, [this, &pool, current, i, j]() mutable {
+                split_chart[i-1][j-1] = W_Move(BJ.Best_Move(pool, current, j), Compute_Weight(pool, current, j));
+            }));
+        }
+
         current.Clear();
     }
 
-    // Computing the total ev
+    // Wait for all futures to complete
+    for (auto &fut : futures) {
+        fut.get(); // Ensures all tasks complete before proceeding
+    }
+}
+
+void Computed_Strategy_Chart::Configure_EV(){
     EV = 0;
     for(int i = 0; i < 15; i++){ // hard chart evs
         for(int j = 0; j < 10; j++){
@@ -113,6 +182,28 @@ void Computed_Strategy_Chart::Configure(const Absent_Map &pool){
             EV += split_chart[i][j].weight * split_chart[i][j].EV;
         }
     }
+}
+
+void Computed_Strategy_Chart::Configure(const Absent_Map &pool){
+
+    auto start = chrono::system_clock::now();
+    Configure_Hard(pool);
+    auto end = chrono::system_clock::now();
+    auto elapsed_seconds = chrono::duration_cast<chrono::seconds>(end - start);
+    cout << "Hard Time Elapsed: " << elapsed_seconds.count() / 60 << " minutes " << elapsed_seconds.count() % 60 << " seconds\n";
+
+    start = chrono::system_clock::now();
+    Configure_Soft(pool);
+    end = chrono::system_clock::now();
+    elapsed_seconds = chrono::duration_cast<chrono::seconds>(end - start);
+    cout << "Soft Time Elapsed: " << elapsed_seconds.count() / 60 << " minutes " << elapsed_seconds.count() % 60 << " seconds\n";
+
+    start = chrono::system_clock::now();
+    Configure_Split(pool);
+    end = chrono::system_clock::now();
+    elapsed_seconds = chrono::duration_cast<chrono::seconds>(end - start);
+    cout << "Split Time Elapsed: " << elapsed_seconds.count() / 60 << " minutes " << elapsed_seconds.count() % 60 << " seconds\n";
+    Configure_EV();
 }
 
 void Computed_Strategy_Chart::Print_Hard(){
