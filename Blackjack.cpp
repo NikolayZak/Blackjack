@@ -30,6 +30,9 @@ short Blackjack::Move_Key(char name, const Hand &my_hand, int dealer_card){
     case 'D':
         ans |= 0x2;
         break;
+    case 'P':
+        ans |= 0x3;
+        break;
     default:
         std::cerr << "Name not recognized " << std::endl;
         break;
@@ -179,29 +182,19 @@ double Blackjack::Dealer_Ace_Exception(Absent_Map pool, int my_total, Hand deale
         dealer_hand.Remove(i);
         pool.Remove(i);
     }
+    // dealer blackjack is assumed loss
     return ans;
 }
 
 // returns the expected value of a stand in this position
 // technical debt : Re-program to store an array of ev values for [<16, 17, ..., 21] (Aka compute all hand total values in 1 go)
 // Part 2: currently
-double Blackjack::Stand_EV(const Absent_Map &pool, const Hand &current, int dealer_card, bool hash){
+double Blackjack::Stand_EV(const Absent_Map &pool, const Hand &current, int dealer_card){
     double ans = -1.0;
     int my_total = current.High_Total();
 
     if(my_total > 21){
         return ans;
-    }
-
-    // check hashed
-    short move_key = 0;
-    uint64_t pool_key = 0;
-    if(hash){
-        move_key = Move_Key('S', current, dealer_card);
-        pool_key = pool.Map_Key();
-        if(getEVIfExists(move_key, pool_key, ans)){
-            return ans;
-        }
     }
 
     Hand D_Hand;
@@ -211,11 +204,6 @@ double Blackjack::Stand_EV(const Absent_Map &pool, const Hand &current, int deal
         return Dealer_Ace_Exception(pool, my_total, D_Hand);
     }
     Stand_Rec(pool, my_total, D_Hand, 1.0, ans);
-
-    // hash
-    if(hash){
-        insertEV(move_key, pool_key, ans);
-    }
     return ans;
 }
 
@@ -227,7 +215,7 @@ double Blackjack::Hit_Rec(Absent_Map pool, Hand my_hand, int dealer_card, double
 
     // compute Stand EV and Hit EV
     double hit_ev = 0.0;
-    double stand_ev = Stand_EV(pool, my_hand, dealer_card, false) * multiplier;
+    double stand_ev = Stand_EV(pool, my_hand, dealer_card) * multiplier;
     double original_prob = multiplier; // save state
     int card_dups;
     for(int i = 1; i < 11; i++){
@@ -257,12 +245,6 @@ double Blackjack::Hit_EV(const Absent_Map &pool, const Hand &current, int dealer
     double card_prob;
     int card_dups;
 
-    // check hashed
-    short move_key = Move_Key('H', current, dealer_card);
-    uint64_t pool_key = pool.Map_Key();
-    if(getEVIfExists(move_key, pool_key, ans)){
-        return ans;
-    }
 
     for(int i = 1; i < 11; i++){
         card_dups = map.Count(i);
@@ -277,9 +259,6 @@ double Blackjack::Hit_EV(const Absent_Map &pool, const Hand &current, int dealer
         map.Remove(i);
     }
 
-    // hash
-    insertEV(move_key, pool_key, ans);
-
     return ans;
 }
 
@@ -290,12 +269,6 @@ double Blackjack::Double_EV(const Absent_Map &pool, const Hand &current, int dea
     double card_prob;
     int card_dups;
 
-    // check hashed
-    short move_key = Move_Key('D', current, dealer_card);
-    uint64_t pool_key = pool.Map_Key();
-    if(getEVIfExists(move_key, pool_key, ans)){
-        return ans;
-    }
 
     for(int i = 1; i < 11; i++){
         card_dups = map.Count(i);
@@ -305,13 +278,10 @@ double Blackjack::Double_EV(const Absent_Map &pool, const Hand &current, int dea
         card_prob = map.Probability(i);
         my_hand.Add(i);
         map.Add(i);
-        ans += Stand_EV(map, my_hand, dealer_card, false) * card_prob;
+        ans += Stand_EV(map, my_hand, dealer_card) * card_prob;
         my_hand.Remove(i);
         map.Remove(i);
     }
-
-    // hash
-    insertEV(move_key, pool_key, ans * 2);
 
     return ans * 2;
 }
@@ -329,7 +299,7 @@ double Blackjack::Split_EV(const Absent_Map &pool, const Hand &current, int deal
 }
 
 void Blackjack::Print_Stats(const Absent_Map &pool, const Hand &current, int dealer_card){
-    double S = Stand_EV(pool, current, dealer_card, true);
+    double S = Stand_EV(pool, current, dealer_card);
     double H = Hit_EV(pool, current, dealer_card);
     double D = Double_EV(pool, current, dealer_card);
     cout << "Stand EV: " << S << endl;
@@ -342,16 +312,49 @@ void Blackjack::Print_Stats(const Absent_Map &pool, const Hand &current, int dea
     }
 }
 
-// Pre-condition: Dealer card should have been accounted for in the pool
+// Assumptions: you have just been dealt these two cards and the dealer shows his card
+// The pool is assumed to be after the deal
 Move Blackjack::Best_Move(const Absent_Map &pool, const Hand &current, int dealer_card){
     Move ans;   // compute values
-    double D = Double_EV(pool, current, dealer_card);
-    double H = Hit_EV(pool, current, dealer_card);
-    double S = Stand_EV(pool, current, dealer_card, true);
-    double P = -10.0;
-    if(current.Can_Split()){
-        P = Split_EV(pool, current, dealer_card);
+    double D, H, S, P;
+    short move_key;
+    uint64_t pool_key = pool.Map_Key();
+
+    // check double hashed
+    move_key = Move_Key('D', current, dealer_card);
+    if(!getEVIfExists(move_key, pool_key, D)){
+        D = Double_EV(pool, current, dealer_card);
+        insertEV(move_key, pool_key, D);
     }
+
+    // check hit hashed
+    move_key = Move_Key('H', current, dealer_card);
+    if(!getEVIfExists(move_key, pool_key, H)){
+        H = Hit_EV(pool, current, dealer_card);
+        insertEV(move_key, pool_key, H);
+    }
+
+    // check stand hashed
+    move_key = Move_Key('S', current, dealer_card);
+    if(!getEVIfExists(move_key, pool_key, S)){
+        S = Stand_EV(pool, current, dealer_card);
+        // edge case: if you have blackjack and the dealer has blackjack it's a push
+        if(dealer_card == 1 && current.High_Total() == 21){
+            S += pool.Probability(10);
+        }
+        insertEV(move_key, pool_key, S);
+    }
+
+    P = -10.0;
+    if(current.Can_Split()){
+        // check split hashed
+        move_key = Move_Key('P', current, dealer_card);
+        if(!getEVIfExists(move_key, pool_key, P)){
+            P = Split_EV(pool, current, dealer_card);
+            insertEV(move_key, pool_key, P);
+        }
+    }
+
     // find max
     ans.EV = S;
     ans.name = 'S';
