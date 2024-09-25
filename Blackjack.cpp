@@ -194,7 +194,7 @@ double Blackjack::Stand_EV(const Absent_Map &pool, const Hand &current, int deal
     int my_total = current.High_Total();
 
     if(my_total > 21){
-        return ans;
+        return ans - 1.0; // minus to avoid subtractive cancellation
     }
 
     Hand D_Hand;
