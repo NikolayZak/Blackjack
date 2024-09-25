@@ -24,10 +24,9 @@ void compute_rec(Absent_Map current){
       auto elapsed_seconds = chrono::duration_cast<chrono::seconds>(end - start);
       cout << "Total Time Elapsed: " << elapsed_seconds.count() / 60 << " minutes " << elapsed_seconds.count() % 60 << " seconds\n";
 }
-double simulate(Hand my_hand, int dealer_card, int iterations){
+double simulate_double(Hand my_hand, int dealer_card, int iterations){
       int wins = 0;
       int losses = 0;
-      int pushes = 0;
       int dhigh;
       int chigh;
       Hand dealer_hand;
@@ -39,22 +38,23 @@ double simulate(Hand my_hand, int dealer_card, int iterations){
             dealer_hand.Add(dealer_card);
             current = my_hand;
             current.Add(shoe.Deal());
-            if(current.High_Total() > 21){
+
+            chigh = current.High_Total();
+            if(chigh > 21){
                   losses++;
             }
+
             while(dealer_hand.High_Total() < 17){
                   dealer_hand.Add(shoe.Deal());
                   if(dealer_hand.High_Total() > 21){
                         wins++;
                   }
             }
+            
             dhigh = dealer_hand.High_Total();
-            chigh = current.High_Total();
             if(chigh > dhigh){
                   wins++;
-            }else if(chigh == dhigh){
-                  pushes++;
-            }else{
+            }else if(chigh < dhigh){
                   losses++;
             }
       }
@@ -62,12 +62,58 @@ double simulate(Hand my_hand, int dealer_card, int iterations){
       return EV * 2;
 }
 
+double simulate_hit(Hand my_hand, int dealer_card, int iterations){
+      int wins = 0;
+      int losses = 0;
+      int dhigh;
+      int chigh;
+      bool loop;
+      Hand dealer_hand;
+      Hand current;
+      Card_Shoe shoe(NUMBER_OF_DECKS);
+      for(int i = 0; i < iterations; i++){
+            shoe.Reshuffle();
+            dealer_hand.Clear();
+            dealer_hand.Add(dealer_card);
+            current = my_hand;
+            loop = true;
+            while(loop){
+                  current.Add(shoe.Deal());
+                  if(current.High_Total() > 11){
+                        loop = false;
+                  }
+            }
+
+            chigh = current.High_Total();
+            if(chigh > 21){
+                  losses++;
+            }
+
+            while(dealer_hand.High_Total() < 17){
+                  dealer_hand.Add(shoe.Deal());
+                  if(dealer_hand.High_Total() > 21){
+                        wins++;
+                  }
+            }
+
+            dhigh = dealer_hand.High_Total();
+            if(chigh > dhigh){
+                  wins++;
+            }else if(chigh < dhigh){
+                  losses++;
+            }
+      }
+      double EV = (double)wins / (double)losses;
+      return EV;
+}
+
 int main(){
       Absent_Map test_map(NUMBER_OF_DECKS);
       //compute_rec(test_map);
       Hand my_hand;
       my_hand.Add(8);
-      cout << "EV: " << simulate(my_hand, 6, 100000000);
+      cout << "Stand EV: " << simulate_double(my_hand, 6, 100000000) << endl;
+      cout << "Hit EV: " << simulate_hit(my_hand, 6, 100000000) << endl;
       
       return 0;
 }
