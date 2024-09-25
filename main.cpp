@@ -27,6 +27,7 @@ void compute_rec(Absent_Map current){
 double simulate_double(Hand my_hand, int dealer_card, int iterations){
       int wins = 0;
       int losses = 0;
+      int pushes = 0;
       int dhigh;
       int chigh;
       Hand dealer_hand;
@@ -52,28 +53,27 @@ double simulate_double(Hand my_hand, int dealer_card, int iterations){
 
             while(dealer_hand.High_Total() < 17){
                   dealer_hand.Add(shoe.Deal());
-                  if(dealer_hand.High_Total() > 21){
-                        wins++;
-                  }
             }
-            
+
             dhigh = dealer_hand.High_Total();
-            if(chigh > dhigh){
+            if(dhigh > 21 || chigh > dhigh){
                   wins++;
-            }else if(chigh < dhigh){
+            }else if(chigh == dhigh){
+                  pushes++;
+            }else{
                   losses++;
             }
       }
-      double EV = (double)wins / (double)losses;
-      return EV * 2;
+      double EV = (double)(wins - losses)/50;
+      return EV;
 }
 
 double simulate_hit(Hand my_hand, int dealer_card, int iterations){
       int wins = 0;
       int losses = 0;
+      int pushes = 0;
       int dhigh;
       int chigh;
-      int counter;
       bool loop;
       Hand dealer_hand;
       Hand current;
@@ -104,20 +104,19 @@ double simulate_hit(Hand my_hand, int dealer_card, int iterations){
 
             while(dealer_hand.High_Total() < 17){
                   dealer_hand.Add(shoe.Deal());
-                  if(dealer_hand.High_Total() > 21){
-                        wins++;
-                  }
-                  counter++;
             }
 
             dhigh = dealer_hand.High_Total();
-            if(chigh > dhigh){
+            if(dhigh > 21 || chigh > dhigh){
                   wins++;
-            }else if(chigh < dhigh){
+            }else if(chigh == dhigh){
+                  pushes++;
+            }else{
                   losses++;
             }
       }
-      double EV = (double)wins / (double)losses;
+      
+      double EV = (double)(wins - losses)/100;
       return EV;
 }
 
@@ -126,8 +125,8 @@ int main(){
       //compute_rec(test_map);
       Hand my_hand;
       my_hand.Add(8);
-      cout << "Double EV: " << simulate_double(my_hand, 6, 100000000) << endl;
-      cout << "Hit EV: " << simulate_hit(my_hand, 6, 100000000) << endl;
+      cout << "Double EV: " << simulate_double(my_hand, 6, 10000000) << endl;
+      cout << "Hit EV: " << simulate_hit(my_hand, 6, 10000000) << endl;
       
       return 0;
 }

@@ -163,7 +163,7 @@ void Blackjack::Stand_Rec(Absent_Map pool, int my_total, Hand dealer_hand, doubl
     }
 }
 
-// todo: make this call Stand_EV not Stand_Rec
+
 double Blackjack::Dealer_Ace_Exception(Absent_Map pool, int my_total, Hand dealer_hand){
     int card_dups;
     double multy;
@@ -263,6 +263,7 @@ double Blackjack::Hit_EV(const Absent_Map &pool, const Hand &current, int dealer
     return ans;
 }
 
+// this whole thing is wrong because I was counting 2* the push value
 double Blackjack::Double_EV(const Absent_Map &pool, const Hand &current, int dealer_card){
     Absent_Map map = pool;
     Hand my_hand = current;
