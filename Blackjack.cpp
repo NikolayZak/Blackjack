@@ -186,7 +186,7 @@ double Blackjack::Dealer_Ace_Exception(Absent_Map pool, int my_total, Hand deale
 // technical debt : Re-program to store an array of ev values for [<16, 17, ..., 21] (Aka compute all hand total values in 1 go)
 // Part 2: currently
 double Blackjack::Stand_EV(const Absent_Map &pool, const Hand &current, int dealer_card, bool hash){
-    double ans = -1.0;
+    double ans = 0.0; // minus at the end to avoid subtractive cancellation
     int my_total = current.High_Total();
 
     if(my_total > 21){
@@ -216,7 +216,7 @@ double Blackjack::Stand_EV(const Absent_Map &pool, const Hand &current, int deal
     if(hash){
         insertEV(move_key, pool_key, ans);
     }
-    return ans;
+    return ans - 1.0; // minus to assume lost all games
 }
 
 double Blackjack::Hit_Rec(Absent_Map pool, Hand my_hand, int dealer_card, double multiplier){
