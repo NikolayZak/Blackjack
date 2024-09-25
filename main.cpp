@@ -44,6 +44,12 @@ double simulate_double(Hand my_hand, int dealer_card, int iterations){
                   losses++;
             }
 
+            // Hit on soft 17
+            dealer_hand.Add(shoe.Deal());
+            if(dealer_hand.Ace()){ // soft 17
+                  dealer_hand.Add(shoe.Deal()); // hits on soft 17
+            }
+
             while(dealer_hand.High_Total() < 17){
                   dealer_hand.Add(shoe.Deal());
                   if(dealer_hand.High_Total() > 21){
@@ -67,6 +73,7 @@ double simulate_hit(Hand my_hand, int dealer_card, int iterations){
       int losses = 0;
       int dhigh;
       int chigh;
+      int counter;
       bool loop;
       Hand dealer_hand;
       Hand current;
@@ -89,11 +96,18 @@ double simulate_hit(Hand my_hand, int dealer_card, int iterations){
                   losses++;
             }
 
+            // Hit on soft 17
+            dealer_hand.Add(shoe.Deal());
+            if(dealer_hand.Ace()){ // soft 17
+                  dealer_hand.Add(shoe.Deal()); // hits on soft 17
+            }
+
             while(dealer_hand.High_Total() < 17){
                   dealer_hand.Add(shoe.Deal());
                   if(dealer_hand.High_Total() > 21){
                         wins++;
                   }
+                  counter++;
             }
 
             dhigh = dealer_hand.High_Total();
@@ -112,7 +126,7 @@ int main(){
       //compute_rec(test_map);
       Hand my_hand;
       my_hand.Add(8);
-      cout << "Stand EV: " << simulate_double(my_hand, 6, 100000000) << endl;
+      cout << "Double EV: " << simulate_double(my_hand, 6, 100000000) << endl;
       cout << "Hit EV: " << simulate_hit(my_hand, 6, 100000000) << endl;
       
       return 0;
